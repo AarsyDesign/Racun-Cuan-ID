@@ -13,7 +13,7 @@
     "default_title": "Buka racun cuan.id"
   },
   "side_panel": {
-    "default_path": "sidepanel/sidepanel.html"
+    "default_path": "index.html"
   },
   "background": {
     "service_worker": "scripts/background.js"

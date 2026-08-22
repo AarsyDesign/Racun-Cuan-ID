@@ -43,15 +43,21 @@ class PinMatrixStudio {
       botToggle.addEventListener('click', () => this.toggleBotWorker());
     }
 
+    // Shopee Scan Buttons
+    const scanDomBtn = document.getElementById('btn-scan-shopee-dom');
+    if (scanDomBtn) {
+      scanDomBtn.addEventListener('click', () => this.scanShopeeActiveTab());
+    }
+
+    const scanTopbarBtn = document.getElementById('btn-topbar-scan-shopee');
+    if (scanTopbarBtn) {
+      scanTopbarBtn.addEventListener('click', () => this.scanShopeeActiveTab());
+    }
+
     // Shopee Products Refresh & Seed
     const syncProductsBtn = document.getElementById('btn-sync-shopee-products');
     if (syncProductsBtn) {
       syncProductsBtn.addEventListener('click', () => this.fetchProducts(true));
-    }
-
-    const seedProductsBtn = document.getElementById('btn-seed-sample-products');
-    if (seedProductsBtn) {
-      seedProductsBtn.addEventListener('click', () => this.handleSeedProducts());
     }
 
     // Shopee Filter Chips
@@ -235,6 +241,58 @@ class PinMatrixStudio {
       if (data.success) {
         this.campaigns = data.campaigns || [];
         this.renderCampaignLibrary();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async scanShopeeActiveTab() {
+    this.showToast('Memindai halaman Shopee...', 'info');
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+      try {
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tabs || !tabs[0]) {
+          this.showToast('Buka tab Shopee terlebih dahulu untuk memindai.', 'warning');
+          return;
+        }
+        
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'SCAN_SHOPEE_PAGE' }, async (response) => {
+          if (chrome.runtime.lastError) {
+            this.showToast('Harap buka halaman produk/katalog Shopee di tab aktif.', 'warning');
+            return;
+          }
+          if (response && response.success && response.products && response.products.length > 0) {
+            await this.saveScrapedProducts(response.products);
+            this.showToast(`✅ Berhasil mendeteksi ${response.products.length} produk Shopee!`, 'success');
+          } else {
+            this.showToast('Tidak ada produk yang terdeteksi di halaman Shopee ini.', 'info');
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        this.showToast('Gagal memindai: ' + err.message, 'error');
+      }
+    } else {
+      this.showToast('⚡ Buka Ekstensi racun cuan.id di Side Panel untuk scan Shopee otomatis.', 'info');
+    }
+  }
+
+  async saveScrapedProducts(products) {
+    try {
+      const res = await fetch(`${this.apiBase}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.products = data.products || [];
+        this.renderProducts();
+        this.renderStats({ activeCampaigns: this.campaigns?.length, queueLength: this.queue?.length });
+        if (this.activeTab !== 'shopee-products') {
+          this.switchTab('shopee-products');
+        }
       }
     } catch (e) {
       console.error(e);

@@ -121,6 +121,10 @@
         </div>
 
         <div class="topbar-actions">
+          <button class="btn-scan-shopee-quick" id="btn-topbar-scan-shopee" title="Scan Produk Shopee dari tab aktif" style="background: linear-gradient(135deg, #00DC82 0%, #059669 100%); color: #042F2E; border: none; border-radius: 20px; font-size: 11.5px; font-weight: 800; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 10px rgba(0, 220, 130, 0.3);">
+            <span>⚡ Scan Shopee</span>
+          </button>
+
           <button class="bot-toggle-btn" id="btn-toggle-bot" title="Toggle background automation worker">
             <span class="badge-dot" style="background: currentColor; width: 6px; height: 6px; border-radius: 50%;"></span>
             <span id="bot-running-status-text">Worker: RUNNING</span>
@@ -130,11 +134,6 @@
             <span class="badge-dot"></span>
             <span>SUPER APP KHUSUS PIN</span>
           </div>
-
-          <a href="sidepanel/sidepanel.html" target="_blank" class="btn-icon-top" title="Buka Side Panel Extension">
-            <span>⚡ Side Panel</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
-          </a>
         </div>
       </header>
 
@@ -268,12 +267,12 @@
               <h1 class="view-title">Shopee Products & Visual Deck</h1>
               <p class="view-subtitle">Kelola produk nyata dari Shopee: komisi XTRA, foto galeri asli, generate AI SEO copy, dan kirim ke Antrean Matrix atau Pinterest.</p>
             </div>
-            <div style="display: flex; gap: 10px;">
-              <button class="btn-secondary" id="btn-sync-shopee-products">
-                🔄 Refresh Produk
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-primary" style="width: auto; background: linear-gradient(135deg, #00DC82 0%, #059669 100%); color: #042F2E; font-weight: 800; border: none; box-shadow: 0 4px 15px rgba(0, 220, 130, 0.35);" id="btn-scan-shopee-dom">
+                ⚡ Scan Layar Shopee
               </button>
-              <button class="btn-primary" style="width: auto; background: #10B981;" id="btn-seed-sample-products">
-                ✨ Muat Produk Viral
+              <button class="btn-secondary" id="btn-sync-shopee-products">
+                🔄 Refresh
               </button>
             </div>
           </div>
