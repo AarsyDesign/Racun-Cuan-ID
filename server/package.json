@@ -1,0 +1,26 @@
+{
+  "name": "affiliator-killer-backend",
+  "version": "2.1.0",
+  "description": "Backend API Server for Affiliator Killer - Shopee to Pinterest, Google Sheets, n8n, Teable & Multi-LLM AI Engine",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2"
+  },
+  "keywords": [
+    "shopee-affiliate",
+    "pinterest",
+    "google-sheets",
+    "n8n",
+    "no-ai-slop",
+    "gemini"
+  ],
+  "author": "Affiliator Killer",
+  "license": "MIT"
+}

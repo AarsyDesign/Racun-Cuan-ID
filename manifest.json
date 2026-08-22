@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "racun cuan.id - Super App Khusus Pinterest Affiliate",
+  "version": "3.0.0",
+  "description": "Super App Khusus Pinterest: Scrape Shopee, generate AI copy & tags, prompt matrix autopilot, Google Sheets sync, dan post otomatis ke Pinterest.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Buka racun cuan.id"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.shopee.co.id/*",
+        "*://*.shopee.sg/*",
+        "*://*.shopee.com.my/*",
+        "*://*.shopee.co.th/*",
+        "*://*.shopee.ph/*"
+      ],
+      "js": ["scripts/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "sidePanel",
+    "storage",
+    "tabs",
+    "scripting",
+    "clipboardWrite",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://*.shopee.co.id/*",
+    "*://*.shopee.sg/*",
+    "*://*.shopee.com.my/*",
+    "*://*.shopee.co.th/*",
+    "*://*.shopee.ph/*",
+    "*://*.pinterest.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*",
+    "<all_urls>"
+  ]
+}

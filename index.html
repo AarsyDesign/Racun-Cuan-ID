@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>racun cuan.id - Super App Khusus Pinterest Affiliate & Automation</title>
+  <link rel="icon" type="image/svg+xml" href="icons/logo-racuncuan.svg">
+  
+  <!-- Modern Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="studio/studio.css">
+</head>
+<body>
+  <div class="studio-container">
+    
+    <!-- ==========================================
+         SIDEBAR NAVIGATION
+         ========================================== -->
+    <aside class="studio-sidebar">
+      <div>
+        <!-- Brand Header: Racun Cuan.id -->
+        <div class="brand-section">
+          <div class="brand-logo-wrap">
+            <div class="brand-icon-logo">
+              <img src="icons/logo-racuncuan.png" alt="racun cuan.id" style="height: 38px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(13, 148, 136, 0.4)); display: block;">
+            </div>
+            <div class="brand-text-block">
+              <h2>racun cuan<span>.id</span></h2>
+              <div class="brand-tagline">SUPER APP KHUSUS PIN</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-tab="overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+            <span>Overview</span>
+          </button>
+
+          <button class="nav-item" data-tab="shopee-products">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            <span>Shopee Products</span>
+            <span class="nav-badge" id="products-nav-badge" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">3</span>
+          </button>
+
+          <button class="nav-item" data-tab="campaign-studio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Campaign Studio</span>
+          </button>
+
+          <button class="nav-item" data-tab="preview-queue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M9 14h6"/><path d="M9 18h6"/><path d="M9 10h6"/></svg>
+            <span>Preview Queue</span>
+            <span class="nav-badge" id="queue-nav-badge">3</span>
+          </button>
+
+          <button class="nav-item" data-tab="pinterest-explorer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10c0 4.42-2.87 8.17-6.84 9.5-.2-.37-.4-1-.08-2.34l1.37-5.83s-.34-.7-.34-1.72c0-1.62.94-2.83 2.1-2.83 1 0 1.47.74 1.47 1.63 0 .99-.63 2.47-.96 3.84-.27 1.15.58 2.09 1.71 2.09 2.05 0 3.63-2.16 3.63-5.28 0-2.76-1.98-4.69-4.81-4.69-3.28 0-5.2 2.46-5.2 5 0 .99.38 2.05.86 2.63a.35.35 0 0 1 .08.34c-.09.38-.29 1.19-.33 1.35-.05.23-.18.28-.41.17-1.53-.71-2.49-2.94-2.49-4.73 0-3.85 2.8-7.39 8.07-7.39 4.24 0 7.53 3.02 7.53 7.06 0 4.21-2.65 7.6-6.33 7.6-1.24 0-2.4-.64-2.8-1.4l-.76 2.9c-.28 1.06-1.03 2.39-1.54 3.21A10 10 0 1 1 12 2z"/></svg>
+            <span>Pinterest Explorer</span>
+          </button>
+
+          <button class="nav-item" data-tab="sheets-hub">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>Sheets & Database</span>
+          </button>
+
+          <button class="nav-item" data-tab="job-history">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            <span>Job History</span>
+          </button>
+
+          <button class="nav-item" data-tab="activity-logs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+            <span>Activity Logs</span>
+          </button>
+
+          <button class="nav-item" data-tab="connections">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>Connections</span>
+          </button>
+
+          <button class="nav-item" data-tab="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Settings</span>
+          </button>
+          <button class="nav-item" data-tab="help-docs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="12 17h.01"/></svg>
+            <span>Help & Docs</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Footer & Health Monitor -->
+      <div class="sidebar-footer">
+        <div class="system-status-indicator">
+          <div class="status-dot"></div>
+          <div>
+            <div class="status-title">Pin Autopilot Bot</div>
+            <div class="status-subtitle" id="bot-tick-time">Active & Running</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ==========================================
+         MAIN WORKSPACE AREA
+         ========================================== -->
+    <main class="studio-main">
+      
+      <!-- Topbar Header -->
+      <header class="studio-topbar">
+        <div class="breadcrumb-wrap">
+          <span class="breadcrumb-root">racun cuan.id</span>
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-active" id="breadcrumb-current">Overview</span>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="bot-toggle-btn" id="btn-toggle-bot" title="Toggle background automation worker">
+            <span class="badge-dot" style="background: currentColor; width: 6px; height: 6px; border-radius: 50%;"></span>
+            <span id="bot-running-status-text">Worker: RUNNING</span>
+          </button>
+
+          <div class="topbar-badge-live">
+            <span class="badge-dot"></span>
+            <span>SUPER APP KHUSUS PIN</span>
+          </div>
+
+          <a href="sidepanel/sidepanel.html" target="_blank" class="btn-icon-top" title="Buka Side Panel Extension">
+            <span>⚡ Side Panel</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- ==========================================
+           TAB 0: OVERVIEW (RACUN CUAN COMMAND HUB)
+           ========================================== -->
+      <section id="view-overview" class="studio-view-pane active">
+        <!-- Super App Hero Banner -->
+        <div class="superapp-hero-card">
+          <div class="hero-left">
+            <div class="hero-badge">
+              <span class="badge-dot" style="background: #10B981;"></span>
+              <span>SUPER APP KHUSUS PINTEREST AFFILIATE</span>
+            </div>
+            <h1 class="hero-title">
+              racun cuan<span style="color: #00DC82;">.id</span>
+            </h1>
+            <p class="hero-subtitle">
+              Satu platform terlengkap untuk mendulang cuan dari Pinterest & Shopee Affiliate: Autopilot 4-Field Prompt Matrix, Scraper Komisi Xtra, Live Pinterest API v5 Reader, dan Auto-Logger Spreadsheet.
+            </p>
+            <div class="hero-cta-row">
+              <button class="btn-hero-primary" onclick="window.studio.switchTab('shopee-products')">
+                🛒 Shopee Pin Radar
+              </button>
+              <button class="btn-hero-secondary" onclick="window.studio.switchTab('campaign-studio')">
+                ⚡ Campaign Matrix
+              </button>
+              <button class="btn-hero-secondary" onclick="window.studio.switchTab('preview-queue')">
+                📋 Preview Queue
+              </button>
+              <button class="btn-hero-secondary" onclick="window.studio.switchTab('pinterest-explorer')">
+                📌 Live Pinterest API
+              </button>
+            </div>
+          </div>
+          <div class="hero-logo-badge">
+            <img src="icons/logo-racuncuan.png" alt="racun cuan.id" style="width: 180px; height: auto; object-fit: contain; filter: drop-shadow(0 10px 25px rgba(0,0,0,0.6));">
+          </div>
+        </div>
+
+        <!-- Super App KPI Cards Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card glow-teal">
+            <div class="kpi-icon-wrap" style="background: rgba(13, 148, 136, 0.15); color: #0D9488;">🛒</div>
+            <div class="kpi-info">
+              <div class="kpi-label">SHOPEE PRODUCTS DECK</div>
+              <div class="kpi-val" id="kpi-shopee-count">0</div>
+              <div class="kpi-sub">Ready to convert to Pins</div>
+            </div>
+          </div>
+
+          <div class="kpi-card glow-emerald">
+            <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #10B981;">⚡</div>
+            <div class="kpi-info">
+              <div class="kpi-label">ACTIVE CAMPAIGNS</div>
+              <div class="kpi-val" id="kpi-active-campaigns">0</div>
+              <div class="kpi-sub">Autopilot Matrix Engines</div>
+            </div>
+          </div>
+
+          <div class="kpi-card glow-orange">
+            <div class="kpi-icon-wrap" style="background: rgba(249, 115, 22, 0.15); color: #F97316;">📋</div>
+            <div class="kpi-info">
+              <div class="kpi-label">PREVIEW QUEUE</div>
+              <div class="kpi-val" id="kpi-queue-count">0</div>
+              <div class="kpi-sub">Pins awaiting curation</div>
+            </div>
+          </div>
+
+          <div class="kpi-card glow-pinterest">
+            <div class="kpi-icon-wrap" style="background: rgba(230, 0, 35, 0.15); color: #E60023;">📌</div>
+            <div class="kpi-info">
+              <div class="kpi-label">PUBLISHED TODAY</div>
+              <div class="kpi-val" id="kpi-published-today">0 / 50</div>
+              <div class="kpi-sub">Daily Anti-Ban Velocity</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Launch Module Tiles -->
+        <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
+          <div class="studio-card feature-tile" onclick="window.studio.switchTab('shopee-products')">
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16,185,129,0.15); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">🛒</div>
+              <div>
+                <h3 style="font-size: 15px; color: #fff; font-weight: 700; margin-bottom: 4px;">Shopee to Pin Radar</h3>
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Scan produk viral Shopee, temukan komisi XTRA tertinggi (hingga 40%+), dan jadikan Pin visual dengan 1-klik.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="studio-card feature-tile" onclick="window.studio.switchTab('campaign-studio')">
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249,115,22,0.15); color: #F97316; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">⚡</div>
+              <div>
+                <h3 style="font-size: 15px; color: #fff; font-weight: 700; margin-bottom: 4px;">4-Field Prompt Matrix Studio</h3>
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Kombinasikan Subjects, Outfit, Location, dan Vibe untuk membuat ratusan variasi pin organik otomatis.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="studio-card feature-tile" onclick="window.studio.switchTab('pinterest-explorer')">
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(230,0,35,0.15); color: #E60023; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">📌</div>
+              <div>
+                <h3 style="font-size: 15px; color: #fff; font-weight: 700; margin-bottom: 4px;">Live Pinterest API v5 Explorer</h3>
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Tarik dan pantau live data Boards, Pins, dan analitik performa langsung dari akun Pinterest Anda.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="studio-card feature-tile" onclick="window.studio.switchTab('sheets-hub')">
+            <div style="display: flex; gap: 14px; align-items: flex-start;">
+              <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(6,182,212,0.15); color: #06B6D4; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">📊</div>
+              <div>
+                <h3 style="font-size: 15px; color: #fff; font-weight: 700; margin-bottom: 4px;">Sheets & Excel Cuan Hub</h3>
+                <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">Pencatatan riwayat pin, auto-logger Google Sheets webhook, dan ekspor spreadsheet database Excel (.xlsx).</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB: SHOPEE PRODUCTS & DECK (AFFILIATOR KILLER MODULE)
+           ========================================== -->
+      <section id="view-shopee-products" class="studio-view-pane">
+        <div class="view-header">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h1 class="view-title">Shopee Products & Visual Deck</h1>
+              <p class="view-subtitle">Kelola produk nyata dari Shopee: komisi XTRA, foto galeri asli, generate AI SEO copy, dan kirim ke Antrean Matrix atau Pinterest.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-secondary" id="btn-sync-shopee-products">
+                🔄 Refresh Produk
+              </button>
+              <button class="btn-primary" style="width: auto; background: #10B981;" id="btn-seed-sample-products">
+                ✨ Muat Produk Viral
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="studio-card" style="margin-bottom: 18px; padding: 14px 18px;">
+          <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="product-filter-chips">
+              <button class="filter-chip active" data-filter="all">Semua Produk (<span id="count-filter-all">0</span>)</button>
+              <button class="filter-chip" data-filter="komisi-xtra">✨ Komisi XTRA</button>
+              <button class="filter-chip" data-filter="star-mall">⭐ Star+ & Mall</button>
+              <button class="filter-chip" data-filter="high-rating">🌟 Rating ≥ 4.8</button>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="input-search-products" class="form-input" placeholder="🔍 Cari judul / toko..." style="width: 240px; font-size: 12px; padding: 6px 12px;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Products Grid Container -->
+        <div id="shopee-products-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px;">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB: SHEETS & DATABASE HUB
+           ========================================== -->
+      <section id="view-sheets-hub" class="studio-view-pane">
+        <div class="view-header">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h1 class="view-title">Sheets & Database Hub</h1>
+              <p class="view-subtitle">Pencatatan riwayat produk, auto-logger Google Sheets webhook, dan ekspor spreadsheet Excel (.xlsx).</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <a href="http://localhost:3000/api/sheets/download-excel" target="_blank" class="btn-primary" style="width: auto; background: #10B981; text-decoration: none;">
+                📥 Download Excel (.xlsx)
+              </a>
+              <button class="btn-secondary" id="btn-export-sheets-csv">
+                📄 Export CSV
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Sheets Webhook Connection Card -->
+        <div class="studio-card" style="margin-bottom: 20px; border-left: 3px solid #10B981;">
+          <div class="card-title-bar">
+            <h3 class="card-title">📊 Google Sheets Auto-Logger Webhook</h3>
+            <span class="conn-status-badge connected">AUTO SYNC</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+            Setiap pin yang dipublikasikan atau di-approve akan otomatis disisipkan sebagai baris baru di spreadsheet Google Sheets Anda via Apps Script Webhook.
+          </p>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="input-sheets-webhook-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" style="font-family: var(--font-mono); font-size: 12px;">
+            <button class="btn-secondary" id="btn-save-sheets-webhook" style="white-space: nowrap;">💾 Simpan & Test</button>
+          </div>
+        </div>
+
+        <!-- Logged Database Table -->
+        <div class="studio-card">
+          <div class="card-title-bar">
+            <h3 class="card-title">📋 Riwayat Database Terkumpul</h3>
+            <span style="font-size: 11px; color: var(--text-muted);" id="sheets-records-count">Total: 0 baris</span>
+          </div>
+          <div class="library-table-wrap">
+            <table class="library-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Produk / Pin</th>
+                  <th>Harga / Komisi</th>
+                  <th>Board Pinterest</th>
+                  <th>Affiliate Link</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="sheets-table-body">
+                <!-- Rendered via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 1: CAMPAIGN STUDIO (Core View)
+           ========================================== -->
+      <section id="view-campaign-studio" class="studio-view-pane">
+        <div class="view-header">
+          <h1 class="view-title">Campaign Studio</h1>
+          <p class="view-subtitle">Susun prompt, tujuan, board, approval mode, dan schedule tanpa membuat form saling bertumpuk.</p>
+        </div>
+
+        <div class="campaign-studio-grid">
+          
+          <!-- Left Column: New Campaign Form -->
+          <div class="studio-card">
+            <div class="card-title-bar">
+              <h3 class="card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New Campaign
+              </h3>
+              <span style="font-size: 11px; color: var(--text-muted);">Modular Prompt Matrix</span>
+            </div>
+
+            <form id="new-campaign-form">
+              <div class="form-group">
+                <label class="form-label" for="camp-name">Campaign Name</label>
+                <input type="text" id="camp-name" class="form-input" placeholder="Contoh: Minimalist Bedroom Decor" required>
+              </div>
+
+              <!-- 4-Field Modular Prompt Matrix -->
+              <div class="form-group">
+                <label class="form-label" for="camp-subjects">Subjects</label>
+                <textarea id="camp-subjects" class="form-textarea" placeholder="contemporary islamic fashion model in clean eye-level portrait / modern influencer..." required></textarea>
+                <div class="prompt-chips">
+                  <span class="prompt-chip" data-target="camp-subjects" data-text="contemporary islamic fashion model in clean eye-level portrait">+ Modest Model</span>
+                  <span class="prompt-chip" data-target="camp-subjects" data-text="modern young asian woman wearing trendy streetwear">+ Asian Trend</span>
+                  <span class="prompt-chip" data-target="camp-subjects" data-text="charismatic male professional in tailored suit">+ Men Suit</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="camp-object-outfit">Object / Outfit</label>
+                <textarea id="camp-object-outfit" class="form-textarea" placeholder="eye-level medium shot, variation of breathable modal silk pashmina in warm sage with minimalist gold pin..."></textarea>
+                <div class="prompt-chips">
+                  <span class="prompt-chip" data-target="camp-object-outfit" data-text="breathable modal silk pashmina with minimalist magnetic pin">+ Silk Pashmina</span>
+                  <span class="prompt-chip" data-target="camp-object-outfit" data-text="flowy linen abaya with intricate embroidery cuffs">+ Linen Abaya</span>
+                  <span class="prompt-chip" data-target="camp-object-outfit" data-text="mandarin collar cotton koko shirt in earthy olive tone">+ Koko Shirt</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="camp-locations">Locations</label>
+                <textarea id="camp-locations" class="form-textarea" placeholder="bright daylight editorial photo studio with soft morning shadows / minimalist beige gallery space..."></textarea>
+                <div class="prompt-chips">
+                  <span class="prompt-chip" data-target="camp-locations" data-text="bright daylight editorial photo studio with soft morning shadows">+ Daylight Studio</span>
+                  <span class="prompt-chip" data-target="camp-locations" data-text="minimalist scandinavian bedroom with warm sunlight">+ Cozy Bedroom</span>
+                  <span class="prompt-chip" data-target="camp-locations" data-text="modern architectural terrace with tropical lush plants">+ Modern Terrace</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="camp-vibes">Vibes / Atmosphere</label>
+                <textarea id="camp-vibes" class="form-textarea" placeholder="premium editorial photography with natural soft shadows, neutral backdrop..."></textarea>
+                <div class="prompt-chips">
+                  <span class="prompt-chip" data-target="camp-vibes" data-text="premium editorial photography with natural soft shadows">+ Editorial Light</span>
+                  <span class="prompt-chip" data-target="camp-vibes" data-text="warm golden hour glow, creamy bokeh, luxury aesthetic">+ Golden Hour</span>
+                  <span class="prompt-chip" data-target="camp-vibes" data-text="clean minimalist nordic aesthetic, soft film grain">+ Nordic Grain</span>
+                </div>
+              </div>
+
+              <!-- Campaign Configurations -->
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label" for="camp-target-board">Target Board</label>
+                  <input type="text" id="camp-target-board" class="form-input" placeholder="Modest Fashion & OOTD" value="Modest Fashion & OOTD">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="camp-subid">Affiliate Sub-ID</label>
+                  <input type="text" id="camp-subid" class="form-input" placeholder="pin_modest" value="pin_modest">
+                </div>
+              </div>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label class="form-label" for="camp-automation-type">Automation</label>
+                  <select id="camp-automation-type" class="form-select">
+                    <option value="DAILY">DAILY</option>
+                    <option value="TARGET">TARGET</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="camp-goal-target">Goal Cap</label>
+                  <input type="number" id="camp-goal-target" class="form-input" value="20" min="1" max="500">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="camp-approval-mode">Approval</label>
+                  <select id="camp-approval-mode" class="form-select">
+                    <option value="AUTO">AUTO</option>
+                    <option value="MANUAL">MANUAL</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label class="form-label" for="camp-window-start">Window Start</label>
+                  <input type="time" id="camp-window-start" class="form-input" value="22:00">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="camp-window-end">Window End</label>
+                  <input type="time" id="camp-window-end" class="form-input" value="03:12">
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" style="margin-top: 8px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Simpan Campaign
+              </button>
+            </form>
+          </div>
+
+          <!-- Right Column: Campaign Library -->
+          <div class="studio-card">
+            <div class="card-title-bar">
+              <h3 class="card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+                Campaign Library
+              </h3>
+              <span style="font-size: 11px; color: var(--text-muted);">Pilih campaign untuk di-enqueue</span>
+            </div>
+
+            <div class="library-table-wrap">
+              <table class="library-table">
+                <thead>
+                  <tr>
+                    <th style="width: 24px;"><input type="checkbox" id="check-all-campaigns"></th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Approval</th>
+                    <th>Automation</th>
+                    <th>Goal</th>
+                    <th>Window</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="campaign-table-body">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+
+            <button class="btn-enqueue-all" id="btn-enqueue-selected">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Enqueue Selected Campaigns
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 2: OVERVIEW
+           ========================================== -->
+      <section id="view-overview" class="studio-view-pane">
+        <div class="view-header">
+          <h1 class="view-title">Overview Dashboard</h1>
+          <p class="view-subtitle">Metrik performa otomatisasi, kecepatan antrean, dan aktivitas bot harian.</p>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Total Pins Generated</div>
+            <div class="kpi-value" id="kpi-total-pins">24</div>
+            <div class="kpi-trend">↑ +18 hari ini</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Dispatched Today</div>
+            <div class="kpi-value" id="kpi-dispatched-today">12 / 50</div>
+            <div class="kpi-trend">● Auto-capped safe rate</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Queue Velocity</div>
+            <div class="kpi-value" id="kpi-queue-pending">3 items</div>
+            <div class="kpi-trend">⚡ 1 pin tiap 5 menit</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Active Campaigns</div>
+            <div class="kpi-value" id="kpi-active-campaigns">7</div>
+            <div class="kpi-trend">✓ 99.4% Success Rate</div>
+          </div>
+        </div>
+
+        <div class="studio-card" style="margin-top: 20px;">
+          <h3 class="card-title" style="margin-bottom: 12px;">🚀 Quick Actions</h3>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn-primary" style="width: auto;" onclick="window.studio.switchTab('campaign-studio')">
+              + Buat Campaign Baru
+            </button>
+            <button class="btn-secondary" onclick="window.studio.switchTab('preview-queue')">
+              📋 Buka Preview Queue
+            </button>
+            <button class="btn-secondary" onclick="window.studio.switchTab('activity-logs')">
+              ⚡ Pantau Live Terminal
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 3: PREVIEW QUEUE
+           ========================================== -->
+      <section id="view-preview-queue" class="studio-view-pane">
+        <div class="view-header">
+          <div class="queue-header-actions">
+            <div>
+              <h1 class="view-title">Preview Queue</h1>
+              <p class="view-subtitle">Review, edit visual & SEO copy, dan setujui pin sebelum diposting ke Pinterest.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn-secondary" id="btn-export-queue-csv">
+                📥 Export Pinterest CSV
+              </button>
+              <button class="btn-primary" id="btn-queue-approve-all" style="width: auto;">
+                ✓ Approve All Pending
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="queue-grid" id="queue-cards-container">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 4: PINTEREST EXPLORER (LIVE DATA READER)
+           ========================================== -->
+      <section id="view-pinterest-explorer" class="studio-view-pane">
+        <div class="view-header">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div>
+              <h1 class="view-title">Pinterest Explorer</h1>
+              <p class="view-subtitle">Membaca & menganalisis data langsung dari akun Pinterest Anda (Boards, Pins, & Metrik).</p>
+            </div>
+            <button class="btn-primary" style="width: auto; background: var(--accent-pinterest);" id="btn-refresh-pinterest-data">
+              🔄 Tarik Data Pinterest Terbaru
+            </button>
+          </div>
+        </div>
+
+        <!-- Account Profile Overview Banner -->
+        <div class="studio-card" style="margin-bottom: 20px; border-left: 3px solid var(--accent-pinterest);">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div id="pe-avatar" style="width: 48px; height: 48px; border-radius: 50%; background: var(--accent-pinterest); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; color: #fff; overflow:hidden;">P</div>
+              <div>
+                <h3 id="pe-username" style="font-size: 16px; color: #fff; font-weight: 700; margin-bottom: 2px;">@Pinterest Account</h3>
+                <div id="pe-account-type" style="font-size: 11px; color: var(--text-muted);">Akun Bisnis Pinterest Terhubung</div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 20px;">
+              <div>
+                <div style="font-size: 10.5px; color: var(--text-muted);">TOTAL BOARDS</div>
+                <div id="pe-boards-count" style="font-size: 16px; font-weight: 700; color: #fff; font-family: var(--font-mono);">-</div>
+              </div>
+              <div>
+                <div style="font-size: 10.5px; color: var(--text-muted);">TOTAL PINS</div>
+                <div id="pe-pins-count" style="font-size: 16px; font-weight: 700; color: #fff; font-family: var(--font-mono);">-</div>
+              </div>
+              <div>
+                <div style="font-size: 10.5px; color: var(--text-muted);">STATUS API</div>
+                <div id="pe-api-status" style="font-size: 12px; font-weight: 600; color: #34d399;">● READY (API v5)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Boards & Pins Tabs / Sections -->
+        <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+          <!-- Boards Section -->
+          <div class="studio-card">
+            <div class="card-title-bar">
+              <h3 class="card-title">📌 Live Pinterest Boards</h3>
+              <span style="font-size: 11px; color: var(--text-muted);" id="pe-boards-subtitle">Data langsung dari GET /v5/boards</span>
+            </div>
+            <div id="pe-boards-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px;">
+              <div style="font-size: 12px; color: var(--text-muted); padding: 16px; text-align: center; grid-column: span 3;">
+                Belum ada data Board. Klik <strong>"Tarik Data Pinterest Terbaru"</strong> atau pastikan token terhubung.
+              </div>
+            </div>
+          </div>
+
+          <!-- Pins Feed Section -->
+          <div class="studio-card">
+            <div class="card-title-bar">
+              <h3 class="card-title">🖼️ Live Published Pins Feed</h3>
+              <span style="font-size: 11px; color: var(--text-muted);" id="pe-pins-subtitle">Data langsung dari GET /v5/pins</span>
+            </div>
+            <div id="pe-pins-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 12px;">
+              <div style="font-size: 12px; color: var(--text-muted); padding: 20px; text-align: center; grid-column: span 3;">
+                Klik <strong>"Tarik Data Pinterest Terbaru"</strong> untuk membaca Pin terbaru dari akun Pinterest Anda.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 5: JOB HISTORY
+           ========================================== -->
+      <section id="view-job-history" class="studio-view-pane">
+        <div class="view-header">
+          <h1 class="view-title">Job History</h1>
+          <p class="view-subtitle">Riwayat lengkap pin yang telah berhasil dipublikasikan oleh Bot Automation.</p>
+        </div>
+
+        <div class="studio-card">
+          <div class="library-table-wrap">
+            <table class="library-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Campaign</th>
+                  <th>Pin Title</th>
+                  <th>Board</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <tr>
+                  <td style="font-size: 11px; color: var(--text-muted);">Baru saja</td>
+                  <td style="font-weight: 600; color: #fff;">Outfit Feeds Modest Daily</td>
+                  <td>Pashmina Plisket Ceruty Babydoll Premium</td>
+                  <td><span style="color: var(--accent-orange);">Modest Fashion</span></td>
+                  <td><span class="badge-status active">PUBLISHED</span></td>
+                  <td><a href="https://pinterest.com" target="_blank" style="color: #60a5fa; text-decoration: none;">↗ Buka Pin</a></td>
+                </tr>
+                <tr>
+                  <td style="font-size: 11px; color: var(--text-muted);">2 jam lalu</td>
+                  <td style="font-weight: 600; color: #fff;">Minimalist Bedroom Decor</td>
+                  <td>Lampu Meja Kamar Tidur Minimalis Nordic Warm</td>
+                  <td><span style="color: var(--accent-orange);">Home Decor</span></td>
+                  <td><span class="badge-status active">PUBLISHED</span></td>
+                  <td><a href="https://pinterest.com" target="_blank" style="color: #60a5fa; text-decoration: none;">↗ Buka Pin</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 5: ACTIVITY LOGS (Live Terminal)
+           ========================================== -->
+      <section id="view-activity-logs" class="studio-view-pane">
+        <div class="view-header">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <h1 class="view-title">Activity Logs</h1>
+              <p class="view-subtitle">Live stream konsol worker, status Gemini AI, dan event dispatch Pinterest.</p>
+            </div>
+            <button class="btn-secondary" id="btn-clear-logs" style="font-size: 12px;">
+              🗑️ Bersihkan Log
+            </button>
+          </div>
+        </div>
+
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <div class="terminal-dot dot-red"></div>
+              <div class="terminal-dot dot-yellow"></div>
+              <div class="terminal-dot dot-green"></div>
+            </div>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">pinlume-worker-stdout.log</span>
+            <span style="font-size: 10px; color: #34d399;">● LIVE STREAM</span>
+          </div>
+          <div class="terminal-body" id="terminal-log-stream">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 6: CONNECTIONS
+           ========================================== -->
+      <section id="view-connections" class="studio-view-pane">
+        <div class="view-header">
+          <h1 class="view-title">Connections & Integrations</h1>
+          <p class="view-subtitle">Hubungkan akun Pinterest resmi (API v5), API Key Gemini, Google Sheets, dan n8n Webhook.</p>
+        </div>
+
+        <div class="connection-grid">
+          <!-- Pinterest Official API v5 Card -->
+          <div class="connection-card" style="grid-column: span 2;">
+            <div>
+              <div class="conn-header">
+                <div class="conn-icon pinterest">📌</div>
+                <div>
+                  <h4 style="color:#fff; font-size:15px; font-weight:700;">Pinterest API v5 (Official Direct Publisher)</h4>
+                  <div style="font-size:11px; color:var(--text-muted);">Publikasi Otomatis Langsung ke Akun Pinterest Anda</div>
+                </div>
+                <span class="conn-status-badge" id="pinterest-conn-badge">NOT CONNECTED</span>
+              </div>
+              <p style="font-size:12.5px; color:var(--text-secondary); margin: 10px 0 16px;">
+                Menggunakan endpoint resmi <code>POST /v5/pins</code> untuk mempublikasikan pin, gambar, judul SEO, deskripsi, dan link affiliasi langsung ke Board Pinterest Anda tanpa perlu klik manual.
+              </p>
+
+              <!-- Token & Board Input Form -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+                <div>
+                  <label class="form-label" style="font-size: 11px; display:flex; justify-content:space-between;">
+                    <span>Pinterest Access Token (Bearer Token)</span>
+                    <a href="https://developers.pinterest.com/apps/" target="_blank" style="color: #60a5fa; text-decoration:none;">Ambil Token ↗</a>
+                  </label>
+                  <input type="password" id="input-pinterest-token" class="form-input" placeholder="pina_..." style="font-family: var(--font-mono); font-size: 12px;">
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">Token dari Pinterest Developer Portal dengan scope <code>boards:read</code> & <code>pins:write</code>.</div>
+                </div>
+
+                <div>
+                  <label class="form-label" style="font-size: 11px;">Target Board Utama</label>
+                  <select id="select-pinterest-board" class="form-select" style="font-size: 12px;">
+                    <option value="">-- Masukkan Token & Klik Verifikasi Dulu --</option>
+                  </select>
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="pinterest-user-meta">Status: Menunggu token</div>
+                </div>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-primary" style="width: auto; background: var(--accent-pinterest);" id="btn-verify-pinterest-token">
+                🔑 Verifikasi & Ambil Daftar Board
+              </button>
+              <button class="btn-secondary" onclick="window.studio.testConnection('pinterest')">⚡ Test Koneksi</button>
+              <a href="https://developers.pinterest.com/docs/api/v5/pins-create" target="_blank" class="btn-secondary" style="text-decoration:none;">📖 Dokumentasi API v5 ↗</a>
+            </div>
+          </div>
+
+          <div class="connection-card">
+            <div>
+              <div class="conn-header">
+                <div class="conn-icon gemini">🧠</div>
+                <div>
+                  <h4 style="color:#fff; font-size:14px;">Google Gemini 2.5 Flash</h4>
+                  <div style="font-size:11px; color:var(--text-muted);">AI Prompt & Copy Engine</div>
+                </div>
+                <span class="conn-status-badge connected">READY</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                Menghasilkan copy SEO Pinterest, judul kaya keyword, dan hashtag spesifik bebas klise (No-AI-Slop).
+              </p>
+            </div>
+            <button class="btn-secondary" onclick="window.studio.testConnection('gemini')">⚡ Test Gemini Engine</button>
+          </div>
+
+          <div class="connection-card">
+            <div>
+              <div class="conn-header">
+                <div class="conn-icon sheets">📊</div>
+                <div>
+                  <h4 style="color:#fff; font-size:14px;">Google Sheets & Database</h4>
+                  <div style="font-size:11px; color:var(--text-muted);">Spreadsheet Auto-Logger</div>
+                </div>
+                <span class="conn-status-badge connected">READY</span>
+              </div>
+              <p style="font-size:12px; color:var(--text-secondary); margin-bottom:14px;">
+                Mencatat setiap produk dan pin yang diproduksi ke file Excel / Google Sheets otomatis.
+              </p>
+            </div>
+            <a href="http://localhost:3000/api/sheets/download-excel" target="_blank" class="btn-secondary" style="text-decoration:none; justify-content:center;">📥 Download Database (.xlsx)</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 7: SETTINGS
+           ========================================== -->
+      <section id="view-settings" class="studio-view-pane">
+        <div class="view-header">
+          <h1 class="view-title">Settings & Anti-Ban Config</h1>
+          <p class="view-subtitle">Pengaturan interval waktu, batas posting harian, dan anti-detection protection.</p>
+        </div>
+
+        <div class="studio-card" style="max-width: 680px;">
+          <div class="form-group">
+            <label class="form-label">AI Engine Provider</label>
+            <select class="form-select">
+              <option value="gemini-2.5-flash">Google Gemini 2.5 Flash (Rekomendasi - Cepat & Cerdas)</option>
+              <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Penalaran Kompleks)</option>
+              <option value="opencode">OpenAI / OpenRouter / Groq Compatible</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Anti-Detection Delay (Jeda Humanized Antar Pin)</label>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <input type="range" min="60" max="600" value="240" class="form-input" style="flex:1;">
+              <span style="font-family: var(--font-mono); font-size: 13px; color: var(--accent-orange);">3–6 Menit</span>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+              Jeda acak antara postingan untuk meniru perilaku manusia dan menjaga akun aman dari shadowban.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Batas Maksimum Posting Harian (Daily Cap)</label>
+            <input type="number" class="form-input" value="50" min="5" max="200">
+          </div>
+
+          <button class="btn-primary" onclick="window.studio.showToast('✅ Pengaturan berhasil disimpan!', 'success')">
+            Simpan Pengaturan
+          </button>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           TAB 8: HELP & DOCS
+           ========================================== -->
+      <section id="view-help-docs" class="studio-view-pane">
+        <div class="view-header">
+          <h1 class="view-title">Help & Automation Playbook</h1>
+          <p class="view-subtitle">Panduan langkah demi langkah memproduksi ratusan konten affiliate per hari secara aman.</p>
+        </div>
+
+        <div class="studio-card" style="max-width: 800px; line-height: 1.6; font-size: 13.5px;">
+          <h3 style="color: #fff; margin-bottom: 8px;">✨ Strategi 100+ Konten PinMatrix Studio</h3>
+          <ol style="margin-left: 20px; color: var(--text-secondary); margin-bottom: 18px;">
+            <li><strong>Gunakan Modular Prompt Matrix</strong>: Bagi prompt ke dalam 4 pilar (Subjects, Object/Outfit, Locations, Vibes) untuk hasil visual & copywriting yang konsisten estetik.</li>
+            <li><strong>Atur Approval Mode</strong>: Gunakan mode <code>MANUAL</code> di awal untuk memastikan gaya copy sesuai selera Anda, lalu beralih ke <code>AUTO</code> untuk otomatisasi penuh 24 jam.</li>
+            <li><strong>Patuhi Jeda Anti-Ban</strong>: Jangan posting lebih dari 1 pin per 3-5 menit agar akun Pinterest tetap berstatus Good Standing.</li>
+            <li><strong>Gunakan Chrome Sidepanel</strong> saat mencari produk di Shopee untuk mengirim produk viral langsung ke Campaign Studio dengan 1 klik!</li>
+          </ol>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Javascript Controller -->
+  <script src="studio/studio.js"></script>
+</body>
+</html>

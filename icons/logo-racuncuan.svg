@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#042F2E"/>
+    </linearGradient>
+    <linearGradient id="cuanAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D9488"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Clean Circle Base matching user's image -->
+  <circle cx="200" cy="200" r="185" fill="url(#bgGlow)" stroke="#CBD5E1" stroke-width="3" filter="url(#softShadow)"/>
+  
+  <!-- Subtle Inner Ring Accent -->
+  <circle cx="200" cy="200" r="172" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.25" stroke-dasharray="8 6"/>
+
+  <!-- Main Text Group: RACUN -->
+  <text x="200" y="175" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-weight="900" font-size="54" fill="url(#textGrad)" text-anchor="middle" letter-spacing="3.5">RACUN</text>
+
+  <!-- Main Text Group: CUAN -->
+  <text x="180" y="240" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-weight="900" font-size="54" fill="url(#textGrad)" text-anchor="middle" letter-spacing="3.5">CUAN</text>
+
+  <!-- Dot and ID Badge -->
+  <text x="268" y="240" font-family="'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-weight="900" font-size="28" fill="url(#cuanAccent)">.id</text>
+
+  <!-- Decorative Sparkle / Pin Spike -->
+  <path d="M298 214 L303 226 L315 231 L303 236 L298 248 L293 236 L281 231 L293 226 Z" fill="#0D9488"/>
+</svg>
