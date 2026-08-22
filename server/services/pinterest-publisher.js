@@ -69,12 +69,18 @@ class PinterestPublisher {
     }
   }
 
+  getApiBaseUrl() {
+    const env = process.env.PINTEREST_ENVIRONMENT || 'production';
+    return env === 'sandbox' ? 'https://api-sandbox.pinterest.com/v5' : 'https://api.pinterest.com/v5';
+  }
+
   /**
    * Official Pinterest API v5: POST /v5/pins (Create Pin)
    * Reference: https://developers.pinterest.com/docs/api/v5/pins-create
    */
   async publishViaApiV5(pinItem, accessToken, defaultBoardId = null) {
-    const endpoint = 'https://api.pinterest.com/v5/pins';
+    const baseUrl = this.getApiBaseUrl();
+    const endpoint = `${baseUrl}/pins`;
     const boardId = pinItem.boardId || defaultBoardId;
 
     if (!boardId || boardId === 'default') {
@@ -151,7 +157,8 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/boards (List Boards)
    */
   async getBoards(accessToken) {
-    const endpoint = 'https://api.pinterest.com/v5/boards?page_size=100';
+    const baseUrl = this.getApiBaseUrl();
+    const endpoint = `${baseUrl}/boards?page_size=100`;
     const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -173,7 +180,8 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/boards/{board_id}
    */
   async getBoardDetails(accessToken, boardId) {
-    const endpoint = `https://api.pinterest.com/v5/boards/${boardId}`;
+    const baseUrl = this.getApiBaseUrl();
+    const endpoint = `${baseUrl}/boards/${boardId}`;
     const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -194,7 +202,8 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/boards/{board_id}/pins
    */
   async getBoardPins(accessToken, boardId, pageSize = 25, bookmark = null) {
-    let url = `https://api.pinterest.com/v5/boards/${boardId}/pins?page_size=${pageSize}`;
+    const baseUrl = this.getApiBaseUrl();
+    let url = `${baseUrl}/boards/${boardId}/pins?page_size=${pageSize}`;
     if (bookmark) url += `&bookmark=${encodeURIComponent(bookmark)}`;
 
     const res = await fetch(url, {
@@ -217,7 +226,8 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/pins (List User's Created Pins)
    */
   async getPins(accessToken, pageSize = 25, bookmark = null) {
-    let url = `https://api.pinterest.com/v5/pins?page_size=${pageSize}`;
+    const baseUrl = this.getApiBaseUrl();
+    let url = `${baseUrl}/pins?page_size=${pageSize}`;
     if (bookmark) url += `&bookmark=${encodeURIComponent(bookmark)}`;
 
     const res = await fetch(url, {
@@ -240,7 +250,8 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/pins/{pin_id} (Get Single Pin Details)
    */
   async getPinDetails(accessToken, pinId) {
-    const endpoint = `https://api.pinterest.com/v5/pins/${pinId}?pin_metrics=true`;
+    const baseUrl = this.getApiBaseUrl();
+    const endpoint = `${baseUrl}/pins/${pinId}?pin_metrics=true`;
     const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
@@ -261,9 +272,10 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/pins/{pin_id}/analytics
    */
   async getPinAnalytics(accessToken, pinId, startDate, endDate, metricTypes = 'IMPRESSION,PIN_CLICK,OUTBOUND_CLICK,SAVE') {
+    const baseUrl = this.getApiBaseUrl();
     const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
     const eDate = endDate || new Date().toISOString().split('T')[0];
-    const url = `https://api.pinterest.com/v5/pins/${pinId}/analytics?start_date=${sDate}&end_date=${eDate}&metric_types=${metricTypes}`;
+    const url = `${baseUrl}/pins/${pinId}/analytics?start_date=${sDate}&end_date=${eDate}&metric_types=${metricTypes}`;
 
     const res = await fetch(url, {
       method: 'GET',
@@ -285,9 +297,10 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/user_account/analytics
    */
   async getUserAnalytics(accessToken, startDate, endDate, metricTypes = 'IMPRESSION,PIN_CLICK,OUTBOUND_CLICK,SAVE,SAVE_RATE') {
+    const baseUrl = this.getApiBaseUrl();
     const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
     const eDate = endDate || new Date().toISOString().split('T')[0];
-    const url = `https://api.pinterest.com/v5/user_account/analytics?start_date=${sDate}&end_date=${eDate}&metric_types=${metricTypes}`;
+    const url = `${baseUrl}/user_account/analytics?start_date=${sDate}&end_date=${eDate}&metric_types=${metricTypes}`;
 
     const res = await fetch(url, {
       method: 'GET',
@@ -309,7 +322,8 @@ class PinterestPublisher {
    * Official Pinterest API v5: GET /v5/user_account (Verify Profile)
    */
   async verifyUserAccount(accessToken) {
-    const endpoint = 'https://api.pinterest.com/v5/user_account';
+    const baseUrl = this.getApiBaseUrl();
+    const endpoint = `${baseUrl}/user_account`;
     const res = await fetch(endpoint, {
       method: 'GET',
       headers: {
