@@ -155,16 +155,16 @@
               Satu platform terlengkap untuk mendulang cuan dari Pinterest & Shopee Affiliate: Autopilot 4-Field Prompt Matrix, Scraper Komisi Xtra, Live Pinterest API v5 Reader, dan Auto-Logger Spreadsheet.
             </p>
             <div class="hero-cta-row">
-              <button class="btn-hero-primary" onclick="window.studio.switchTab('shopee-products')">
+              <button class="btn-hero-primary nav-trigger" data-tab="shopee-products">
                 🛒 Shopee Pin Radar
               </button>
-              <button class="btn-hero-secondary" onclick="window.studio.switchTab('campaign-studio')">
+              <button class="btn-hero-secondary nav-trigger" data-tab="campaign-studio">
                 ⚡ Campaign Matrix
               </button>
-              <button class="btn-hero-secondary" onclick="window.studio.switchTab('preview-queue')">
+              <button class="btn-hero-secondary nav-trigger" data-tab="preview-queue">
                 📋 Preview Queue
               </button>
-              <button class="btn-hero-secondary" onclick="window.studio.switchTab('pinterest-explorer')">
+              <button class="btn-hero-secondary nav-trigger" data-tab="pinterest-explorer">
                 📌 Live Pinterest API
               </button>
             </div>
@@ -215,7 +215,7 @@
 
         <!-- Quick Launch Module Tiles -->
         <div style="margin-top: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px;">
-          <div class="studio-card feature-tile" onclick="window.studio.switchTab('shopee-products')">
+          <div class="studio-card feature-tile nav-trigger" data-tab="shopee-products">
             <div style="display: flex; gap: 14px; align-items: flex-start;">
               <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(16,185,129,0.15); color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">🛒</div>
               <div>
@@ -225,7 +225,7 @@
             </div>
           </div>
 
-          <div class="studio-card feature-tile" onclick="window.studio.switchTab('campaign-studio')">
+          <div class="studio-card feature-tile nav-trigger" data-tab="campaign-studio">
             <div style="display: flex; gap: 14px; align-items: flex-start;">
               <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(249,115,22,0.15); color: #F97316; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">⚡</div>
               <div>
@@ -235,7 +235,7 @@
             </div>
           </div>
 
-          <div class="studio-card feature-tile" onclick="window.studio.switchTab('pinterest-explorer')">
+          <div class="studio-card feature-tile nav-trigger" data-tab="pinterest-explorer">
             <div style="display: flex; gap: 14px; align-items: flex-start;">
               <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(230,0,35,0.15); color: #E60023; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">📌</div>
               <div>
@@ -245,7 +245,7 @@
             </div>
           </div>
 
-          <div class="studio-card feature-tile" onclick="window.studio.switchTab('sheets-hub')">
+          <div class="studio-card feature-tile nav-trigger" data-tab="sheets-hub">
             <div style="display: flex; gap: 14px; align-items: flex-start;">
               <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(6,182,212,0.15); color: #06B6D4; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">📊</div>
               <div>
@@ -554,13 +554,13 @@
         <div class="studio-card" style="margin-top: 20px;">
           <h3 class="card-title" style="margin-bottom: 12px;">🚀 Quick Actions</h3>
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <button class="btn-primary" style="width: auto;" onclick="window.studio.switchTab('campaign-studio')">
+            <button class="btn-primary nav-trigger" style="width: auto;" data-tab="campaign-studio">
               + Buat Campaign Baru
             </button>
-            <button class="btn-secondary" onclick="window.studio.switchTab('preview-queue')">
+            <button class="btn-secondary nav-trigger" data-tab="preview-queue">
               📋 Buka Preview Queue
             </button>
-            <button class="btn-secondary" onclick="window.studio.switchTab('activity-logs')">
+            <button class="btn-secondary nav-trigger" data-tab="activity-logs">
               ⚡ Pantau Live Terminal
             </button>
           </div>
@@ -794,7 +794,7 @@
               <button class="btn-primary" style="width: auto; background: var(--accent-pinterest);" id="btn-verify-pinterest-token">
                 🔑 Verifikasi & Ambil Daftar Board
               </button>
-              <button class="btn-secondary" onclick="window.studio.testConnection('pinterest')">⚡ Test Koneksi</button>
+              <button class="btn-secondary" id="btn-test-pinterest">⚡ Test Koneksi</button>
               <a href="https://developers.pinterest.com/docs/api/v5/pins-create" target="_blank" class="btn-secondary" style="text-decoration:none;">📖 Dokumentasi API v5 ↗</a>
             </div>
           </div>
@@ -813,7 +813,7 @@
                 Menghasilkan copy SEO Pinterest, judul kaya keyword, dan hashtag spesifik bebas klise (No-AI-Slop).
               </p>
             </div>
-            <button class="btn-secondary" onclick="window.studio.testConnection('gemini')">⚡ Test Gemini Engine</button>
+            <button class="btn-secondary" id="btn-test-gemini">⚡ Test Gemini Engine</button>
           </div>
 
           <div class="connection-card">
@@ -870,7 +870,7 @@
             <input type="number" class="form-input" value="50" min="5" max="200">
           </div>
 
-          <button class="btn-primary" onclick="window.studio.showToast('✅ Pengaturan berhasil disimpan!', 'success')">
+          <button class="btn-primary" id="btn-save-settings">
             Simpan Pengaturan
           </button>
         </div>

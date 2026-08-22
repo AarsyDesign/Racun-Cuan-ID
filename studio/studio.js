@@ -29,12 +29,57 @@ class PinMatrixStudio {
   }
 
   bindEvents() {
-    // Navigation tabs
-    document.querySelectorAll('.nav-item').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const targetTab = btn.getAttribute('data-tab');
-        if (targetTab) this.switchTab(targetTab);
-      });
+    // Global Event Delegation (100% CSP compliant in Chrome Extension and Web)
+    document.addEventListener('click', (e) => {
+      // 1. Tab Navigation triggers
+      const navTrigger = e.target.closest('.nav-trigger, .nav-item');
+      if (navTrigger) {
+        const tab = navTrigger.getAttribute('data-tab');
+        if (tab) {
+          this.switchTab(tab);
+          return;
+        }
+      }
+
+      // 2. Action buttons with data-action
+      const actionBtn = e.target.closest('[data-action]');
+      if (actionBtn) {
+        const action = actionBtn.getAttribute('data-action');
+        const id = actionBtn.getAttribute('data-id');
+
+        switch (action) {
+          case 'toggle-campaign':
+            if (id) this.toggleCampaign(id);
+            break;
+          case 'enqueue-campaign':
+            if (id) this.enqueueSingle(id);
+            break;
+          case 'delete-campaign':
+            if (id) this.deleteCampaign(id);
+            break;
+          case 'approve-queue':
+            if (id) this.approveQueueItem(id);
+            break;
+          case 'dispatch-queue':
+            if (id) this.dispatchQueueItem(id);
+            break;
+          case 'remove-queue':
+            if (id) this.removeQueueItem(id);
+            break;
+          case 'enqueue-matrix':
+            if (id) this.enqueueProductToMatrix(id);
+            break;
+          case 'post-pinterest':
+            if (id) this.postProductToPinterest(id);
+            break;
+          case 'save-sheets':
+            if (id) this.saveProductToSheets(id);
+            break;
+          case 'delete-product':
+            if (id) this.deleteProduct(id);
+            break;
+        }
+      }
     });
 
     // Bot toggle in topbar
@@ -119,14 +164,28 @@ class PinMatrixStudio {
       verifyPinterestBtn.addEventListener('click', () => this.handleVerifyPinterestToken());
     }
 
+    const testPinterestBtn = document.getElementById('btn-test-pinterest');
+    if (testPinterestBtn) {
+      testPinterestBtn.addEventListener('click', () => this.testConnection('pinterest'));
+    }
+
+    const testGeminiBtn = document.getElementById('btn-test-gemini');
+    if (testGeminiBtn) {
+      testGeminiBtn.addEventListener('click', () => this.testConnection('gemini'));
+    }
+
+    const saveSettingsBtn = document.getElementById('btn-save-settings');
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', () => this.showToast('✅ Pengaturan berhasil disimpan!', 'success'));
+    }
+
     // Pinterest Board Selection Change
     const selectBoard = document.getElementById('select-pinterest-board');
     if (selectBoard) {
       selectBoard.addEventListener('change', (e) => this.handleBoardSelectionChange(e.target.value));
     }
 
-    // Pinterest Explorer Refresh
-    const refreshPinterestBtn = document.getElementById('btn-refresh-pinterest-data');
+    const refreshPinterestBtn = document.getElementById('btn-refresh-pinterest-explorer');
     if (refreshPinterestBtn) {
       refreshPinterestBtn.addEventListener('click', () => this.fetchPinterestData(true));
     }
@@ -412,13 +471,13 @@ class PinMatrixStudio {
           </td>
           <td>
             <div style="display: flex; gap: 4px;">
-              <button class="table-action-btn ${isActive ? 'pause' : 'play'}" onclick="window.studio.toggleCampaign('${camp.id}')" title="${isActive ? 'Pause Campaign' : 'Activate Campaign'}">
+              <button class="table-action-btn ${isActive ? 'pause' : 'play'}" data-action="toggle-campaign" data-id="${camp.id}" title="${isActive ? 'Pause Campaign' : 'Activate Campaign'}">
                 ${isActive ? '⏸' : '▶'}
               </button>
-              <button class="table-action-btn" onclick="window.studio.enqueueSingle('${camp.id}')" title="Enqueue 1 Pin">
+              <button class="table-action-btn" data-action="enqueue-campaign" data-id="${camp.id}" title="Enqueue 1 Pin">
                 ⚡
               </button>
-              <button class="table-action-btn" onclick="window.studio.deleteCampaign('${camp.id}')" title="Hapus Campaign" style="color: #f87171;">
+              <button class="table-action-btn" data-action="delete-campaign" data-id="${camp.id}" title="Hapus Campaign" style="color: #f87171;">
                 ✕
               </button>
             </div>
@@ -486,15 +545,15 @@ class PinMatrixStudio {
           </div>
           <div class="queue-card-actions">
             ${isPending ? `
-              <button class="btn-primary" style="padding: 7px 12px; font-size: 12px;" onclick="window.studio.approveQueueItem('${item.id}')">
+              <button class="btn-primary" style="padding: 7px 12px; font-size: 12px;" data-action="approve-queue" data-id="${item.id}">
                 ✓ Approve
               </button>
             ` : `
-              <button class="btn-primary" style="padding: 7px 12px; font-size: 12px; background: linear-gradient(135deg, #e60023, #b91c1c);" onclick="window.studio.dispatchQueueItem('${item.id}')">
+              <button class="btn-primary" style="padding: 7px 12px; font-size: 12px; background: linear-gradient(135deg, #e60023, #b91c1c);" data-action="dispatch-queue" data-id="${item.id}">
                 📌 Dispatch Pin
               </button>
             `}
-            <button class="btn-secondary" style="padding: 7px 10px; font-size: 12px;" onclick="window.studio.removeQueueItem('${item.id}')">
+            <button class="btn-secondary" style="padding: 7px 10px; font-size: 12px;" data-action="remove-queue" data-id="${item.id}">
               ✕
             </button>
           </div>
@@ -1117,16 +1176,16 @@ class PinMatrixStudio {
             </div>
 
             <div class="shopee-card-actions">
-              <button class="btn-card-action btn-card-matrix" title="Masukkan produk ini ke antrean Matrix AI" onclick="window.studio.enqueueProductToMatrix('${this.escapeHtml(prod.id || prod.itemId)}')">
+              <button class="btn-card-action btn-card-matrix" title="Masukkan produk ini ke antrean Matrix AI" data-action="enqueue-matrix" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
                 ⚡ Enqueue Matrix
               </button>
-              <button class="btn-card-action btn-card-pin-direct" title="Langsung posting ke Pinterest" onclick="window.studio.postProductToPinterest('${this.escapeHtml(prod.id || prod.itemId)}')">
+              <button class="btn-card-action btn-card-pin-direct" title="Langsung posting ke Pinterest" data-action="post-pinterest" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
                 📌 Post Pinterest
               </button>
-              <button class="btn-card-action btn-card-sheets" title="Simpan ke Google Sheets" onclick="window.studio.saveProductToSheets('${this.escapeHtml(prod.id || prod.itemId)}')">
+              <button class="btn-card-action btn-card-sheets" title="Simpan ke Google Sheets" data-action="save-sheets" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
                 📊 Sheets Sync
               </button>
-              <button class="btn-card-action btn-card-delete" title="Hapus dari daftar produk" onclick="window.studio.deleteProduct('${this.escapeHtml(prod.id || prod.itemId)}')">
+              <button class="btn-card-action btn-card-delete" title="Hapus dari daftar produk" data-action="delete-product" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
                 🗑️ Hapus
               </button>
             </div>
@@ -1234,6 +1293,87 @@ class PinMatrixStudio {
       await this.fetchProducts(true);
     } catch (err) {
       this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  async scanShopeeActiveTab() {
+    this.showToast('🔍 Memindai layar produk Shopee di tab browser...', 'info');
+
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (!activeTab || !activeTab.id) {
+          this.showToast('⚠️ Tidak ada tab aktif yang ditemukan.', 'warning');
+          return;
+        }
+
+        const tabUrl = activeTab.url || '';
+        if (!tabUrl.includes('shopee.co.id') && !tabUrl.includes('affiliate.shopee')) {
+          this.showToast('⚠️ Buka halaman Shopee / Shopee Affiliate Center di sebelah kiri terlebih dahulu!', 'warning');
+          return;
+        }
+
+        // Send SCAN_SHOPEE_PAGE to content script
+        chrome.tabs.sendMessage(activeTab.id, { action: 'SCAN_SHOPEE_PAGE', mode: 'all' }, async (response) => {
+          if (chrome.runtime.lastError || !response) {
+            console.log('[Scanner] Injecting content script and retrying...', chrome.runtime.lastError?.message);
+            try {
+              if (chrome.scripting && chrome.scripting.executeScript) {
+                await chrome.scripting.executeScript({
+                  target: { tabId: activeTab.id },
+                  files: ['scripts/content.js']
+                });
+
+                // Retry message
+                chrome.tabs.sendMessage(activeTab.id, { action: 'SCAN_SHOPEE_PAGE', mode: 'all' }, async (retryRes) => {
+                  if (retryRes && retryRes.success && retryRes.products?.length > 0) {
+                    await this.saveScrapedProducts(retryRes.products);
+                  } else {
+                    this.showToast('⚠️ Tidak ada produk Shopee terdeteksi pada tampilan saat ini. Coba scroll halaman Shopee sedikit lalu klik scan kembali.', 'warning');
+                  }
+                });
+              } else {
+                this.showToast('⚠️ Reload tab Shopee lalu coba klik Scan lagi.', 'warning');
+              }
+            } catch (injErr) {
+              this.showToast(`❌ Gagal terhubung ke tab Shopee: ${injErr.message}`, 'error');
+            }
+            return;
+          }
+
+          if (response.success && response.products && response.products.length > 0) {
+            await this.saveScrapedProducts(response.products);
+          } else {
+            this.showToast('⚠️ Tidak ada produk Shopee terdeteksi pada tampilan saat ini. Coba scroll halaman Shopee sedikit lalu klik scan kembali.', 'warning');
+          }
+        });
+      } catch (err) {
+        this.showToast(`❌ Error scanning: ${err.message}`, 'error');
+      }
+    } else {
+      this.showToast('ℹ️ Scanner berjalan langsung melalui Chrome Extension sidepanel.', 'info');
+    }
+  }
+
+  async saveScrapedProducts(products) {
+    try {
+      this.showToast(`Menyimpan ${products.length} produk Shopee ke database...`, 'info');
+      const res = await fetch(`${this.apiBase}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(`🎉 Berhasil menyimpan ${products.length} produk dari Shopee!`, 'success');
+        await this.fetchProducts();
+        this.switchTab('shopee-products');
+      } else {
+        this.showToast(`❌ Gagal menyimpan produk: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error menyimpan produk: ${err.message}`, 'error');
     }
   }
 
