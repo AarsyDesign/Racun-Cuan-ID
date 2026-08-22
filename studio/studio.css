@@ -1445,36 +1445,53 @@ body {
 
 @media (max-width: 900px) {
   body {
-    flex-direction: column;
     overflow: hidden;
     height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+  }
+
+  .studio-container {
+    flex-direction: column !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    display: flex !important;
   }
 
   .studio-sidebar {
-    width: 100%;
-    min-width: 100%;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
-    padding: 8px 12px;
-    background: #0b111d;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    z-index: 100;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+    padding: 8px 12px 6px !important;
+    background: #0b111d !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
+    z-index: 100 !important;
   }
 
   .sidebar-top {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 4px;
+    width: 100%;
   }
 
   .brand-section {
-    padding: 2px 0 6px 0;
-    margin-bottom: 2px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 0 0 6px 0 !important;
+    margin-bottom: 2px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
   }
 
   .brand-logo-wrap {
@@ -1482,7 +1499,7 @@ body {
   }
 
   .brand-text-block h2 {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .brand-tagline {
@@ -1490,76 +1507,78 @@ body {
   }
 
   .sidebar-nav {
-    display: flex;
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 6px;
-    padding-bottom: 4px;
-    padding-top: 2px;
-    white-space: nowrap;
-    scrollbar-width: none;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    gap: 6px !important;
+    padding: 4px 0 2px 0 !important;
+    width: 100% !important;
+    scrollbar-width: none !important;
   }
 
   .sidebar-nav::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
 
   .sidebar-nav .nav-item {
-    padding: 6px 12px;
-    font-size: 12px;
-    flex-shrink: 0;
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    margin-bottom: 0;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding: 5px 12px !important;
+    font-size: 11.5px !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    margin-bottom: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
   }
 
   .sidebar-nav .nav-item.active {
-    background: linear-gradient(135deg, rgba(0, 220, 130, 0.2) 0%, rgba(13, 148, 136, 0.3) 100%);
-    border-color: rgba(0, 220, 130, 0.5);
-    color: #34D399;
+    background: linear-gradient(135deg, rgba(0, 220, 130, 0.2) 0%, rgba(13, 148, 136, 0.3) 100%) !important;
+    border-color: rgba(0, 220, 130, 0.5) !important;
+    color: #34D399 !important;
   }
 
   .sidebar-nav .nav-item svg {
-    width: 15px;
-    height: 15px;
+    width: 14px;
+    height: 14px;
   }
 
   .sidebar-footer {
-    display: none;
+    display: none !important;
   }
 
   .studio-main {
-    flex: 1;
-    overflow-y: auto;
-    padding: 14px 12px;
+    flex: 1 1 auto !important;
+    height: calc(100vh - 85px) !important;
+    max-height: calc(100vh - 85px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 12px 12px !important;
+    display: block !important;
   }
 
   .studio-topbar {
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .breadcrumb-wrap {
-    font-size: 12px;
+    display: none !important;
   }
 
   .superapp-hero-card {
     flex-direction: column;
-    padding: 18px;
-    gap: 14px;
+    padding: 16px;
+    gap: 12px;
     text-align: left;
+    margin-bottom: 14px;
   }
 
   .hero-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .hero-subtitle {
-    font-size: 12px;
-    margin-bottom: 14px;
+    font-size: 11.5px;
+    margin-bottom: 12px;
   }
 
   .hero-logo-badge {
@@ -1572,54 +1591,55 @@ body {
 
   .btn-hero-primary,
   .btn-hero-secondary {
-    font-size: 11.5px;
-    padding: 7px 12px;
+    font-size: 11px;
+    padding: 6px 10px;
   }
 
   .kpi-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 8px;
+    margin-bottom: 14px;
   }
 
   .kpi-card {
-    padding: 12px 14px;
-    gap: 10px;
+    padding: 10px 12px;
+    gap: 8px;
   }
 
   .kpi-icon-wrap {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 
   .kpi-val {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .products-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 
   .matrix-studio-layout {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 14px;
   }
 
   .queue-grid {
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 12px;
   }
 
   .view-header {
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
 
   .view-title {
-    font-size: 18px;
+    font-size: 17px;
   }
 
   .view-subtitle {
-    font-size: 11.5px;
+    font-size: 11px;
   }
 }

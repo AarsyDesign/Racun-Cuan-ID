@@ -5,7 +5,7 @@
 class PinMatrixStudio {
   constructor() {
     this.apiBase = 'http://localhost:3000/api';
-    this.activeTab = 'shopee-products';
+    this.activeTab = 'overview';
     this.products = [];
     this.productFilter = 'all';
     this.productSearch = '';
