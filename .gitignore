@@ -1,8 +1,22 @@
+# Dependencies
 node_modules/
+
+# Environment Variables & Secrets (NEVER COMMITTED)
 .env
 .env.*
 server/.env
+server/.env.*
+
+# Local Database & Dynamic Cache
+server/data/*.json
+!server/data/database.example.json
+
+# Local Exported Spreadsheets
+*.xlsx
+*.csv
+!init-sheets.js
+
+# Logs and OS artifacts
 *.log
 .DS_Store
 Thumbs.db
-

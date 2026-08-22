@@ -1,0 +1,41 @@
+{
+  "products": [],
+  "campaigns": [],
+  "queue": [],
+  "history": [],
+  "logs": [
+    {
+      "id": "log_init",
+      "timestamp": "2026-08-23T00:00:00.000Z",
+      "level": "INFO",
+      "tag": "SYSTEM",
+      "message": "racun cuan.id Super App initialized."
+    }
+  ],
+  "botConfig": {
+    "isRunning": true,
+    "intervalMinutes": 5,
+    "antiBanMinDelaySeconds": 180,
+    "antiBanMaxDelaySeconds": 480,
+    "dailyCap": 50,
+    "dailyCountToday": 0,
+    "mode": "API_V5",
+    "imageGenerator": "ENHANCED_VISUAL"
+  },
+  "connections": {
+    "pinterestStatus": "STANDBY",
+    "pinterestUsername": "",
+    "pinterestAccessToken": "",
+    "pinterestBoardId": "",
+    "pinterestApiConnected": false,
+    "geminiStatus": "STANDBY",
+    "geminiApiKey": "",
+    "geminiModel": "gemini-2.5-flash",
+    "sheetsStatus": "STANDBY",
+    "sheetsWebhookUrl": "",
+    "n8nStatus": "STANDBY",
+    "n8nWebhookUrl": ""
+  },
+  "settings": {},
+  "lastUpdated": "2026-08-23T00:00:00.000Z"
+}
