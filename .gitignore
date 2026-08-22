@@ -20,3 +20,8 @@ server/data/*.json
 *.log
 .DS_Store
 Thumbs.db
+
+# Sidepanel local mock
+sidepanel/mock-data.js
+sidepanel/assets/
+
