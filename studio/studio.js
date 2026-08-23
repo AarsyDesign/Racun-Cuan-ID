@@ -88,16 +88,10 @@ class PinMatrixStudio {
       botToggle.addEventListener('click', () => this.toggleBotWorker());
     }
 
-    // Shopee Scan Buttons
-    const scanDomBtn = document.getElementById('btn-scan-shopee-dom');
-    if (scanDomBtn) {
-      scanDomBtn.addEventListener('click', () => this.scanShopeeActiveTab());
-    }
-
-    const scanTopbarBtn = document.getElementById('btn-topbar-scan-shopee');
-    if (scanTopbarBtn) {
-      scanTopbarBtn.addEventListener('click', () => this.scanShopeeActiveTab());
-    }
+    // Shopee Scan Buttons (Topbar & Tab Header)
+    document.querySelectorAll('#btn-scan-shopee-dom, #btn-scan-shopee-now, #btn-topbar-scan-shopee').forEach(btn => {
+      btn.addEventListener('click', () => this.scanShopeeActiveTab());
+    });
 
     // Shopee Products Refresh & Seed
     const syncProductsBtn = document.getElementById('btn-sync-shopee-products');
@@ -954,6 +948,58 @@ class PinMatrixStudio {
     } catch (e) {
       this.showToast(`❌ Terjadi kesalahan: ${e.message}`, 'error');
     }
+  }
+
+  async scanShopeeActiveTab() {
+    this.showToast('🔍 Memindai produk & komisi di halaman Shopee...', 'info');
+
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        let targetTab = activeTab;
+
+        if (!targetTab?.url?.includes('shopee')) {
+          const allTabs = await chrome.tabs.query({});
+          const shopeeTab = allTabs.find(t => t.url && (t.url.includes('shopee.co.id') || t.url.includes('affiliate.shopee')));
+          if (shopeeTab) {
+            targetTab = shopeeTab;
+          }
+        }
+
+        if (targetTab && targetTab.id) {
+          chrome.tabs.sendMessage(targetTab.id, { action: 'SCAN_SHOPEE_PAGE', mode: 'viewport' }, async (response) => {
+            if (chrome.runtime.lastError || !response || !response.products || response.products.length === 0) {
+              this.showToast('Belum ada produk terdeteksi. Scroll halaman Shopee lalu scan kembali.', 'warning');
+              return;
+            }
+
+            try {
+              const res = await fetch(`${this.apiBase}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ products: response.products })
+              });
+
+              if (res.ok) {
+                await this.fetchProducts();
+                await this.fetchStats();
+                this.showToast(`✨ Berhasil memindai ${response.products.length} produk Shopee!`, 'success');
+              } else {
+                this.showToast('Gagal menyimpan hasil scan ke database.', 'error');
+              }
+            } catch (err) {
+              console.error('Save scanned products error:', err);
+              this.showToast('Gagal sinkronisasi ke server.', 'error');
+            }
+          });
+          return;
+        }
+      } catch (e) {
+        console.warn('Scan extension error:', e);
+      }
+    }
+
+    this.showToast('Buka tab Shopee Affiliate di browser untuk memulai scan.', 'warning');
   }
 
   async handleBoardSelectionChange(boardId) {
