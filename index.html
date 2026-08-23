@@ -129,6 +129,13 @@
         </div>
 
         <div class="topbar-actions">
+          <!-- Real-Time Countdown Timer Badge -->
+          <div class="topbar-countdown-badge" id="topbar-countdown-wrap" title="Waktu hitung mundur hingga jadwal posting otomatis berikutnya (interval 35 menit)" style="display: flex; align-items: center; gap: 6px; background: rgba(249, 115, 22, 0.12); border: 1px solid rgba(249, 115, 22, 0.35); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; color: #fb923c; font-weight: 700; font-family: var(--font-mono); letter-spacing: 0.3px;">
+            <span style="font-size: 13px;">⏱️</span>
+            <span>Next Post:</span>
+            <span id="bot-countdown-text" style="color: #fff; font-weight: 800;">35:00</span>
+          </div>
+
           <button class="bot-toggle-btn" id="btn-toggle-bot" title="Toggle background automation worker">
             <span class="badge-dot" style="background: currentColor; width: 6px; height: 6px; border-radius: 50%;"></span>
             <span id="bot-running-status-text">Worker: RUNNING</span>
@@ -701,8 +708,29 @@
            ========================================== -->
       <section id="view-job-history" class="studio-view-pane">
         <div class="view-header">
-          <h1 class="view-title">Job History</h1>
-          <p class="view-subtitle">Riwayat lengkap pin yang telah berhasil dipublikasikan oleh Bot Automation.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <h1 class="view-title">Job & Broadcast History</h1>
+              <p class="view-subtitle">Riwayat terpadu postingan yang telah dipublikasikan ke Telegram Channel dan Pinterest Board.</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-secondary" id="btn-refresh-history" style="font-size: 12px;">
+                🔄 Refresh
+              </button>
+              <button class="btn-secondary" id="btn-clear-history" style="font-size: 12px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                🗑️ Bersihkan Riwayat
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="studio-card" style="margin-bottom: 14px; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="history-filter-chips">
+            <button class="filter-chip active" data-platform="all">🌐 Semua Platform (<span id="count-hist-all">0</span>)</button>
+            <button class="filter-chip" data-platform="TELEGRAM" style="border-color: rgba(56, 189, 248, 0.3);">📢 Telegram (<span id="count-hist-tg">0</span>)</button>
+            <button class="filter-chip" data-platform="PINTEREST" style="border-color: rgba(230, 0, 35, 0.3);">📌 Pinterest (<span id="count-hist-pin">0</span>)</button>
+          </div>
         </div>
 
         <div class="studio-card">
@@ -710,31 +738,15 @@
             <table class="library-table">
               <thead>
                 <tr>
-                  <th>Timestamp</th>
-                  <th>Campaign</th>
-                  <th>Pin Title</th>
-                  <th>Board</th>
-                  <th>Status</th>
-                  <th>Action</th>
+                  <th style="width: 140px;">Waktu</th>
+                  <th style="width: 170px;">Platform & Tujuan</th>
+                  <th>Judul Rekomendasi / Pin</th>
+                  <th style="width: 110px;">Status</th>
+                  <th style="width: 130px;">Tautan Post</th>
                 </tr>
               </thead>
               <tbody id="history-table-body">
-                <tr>
-                  <td style="font-size: 11px; color: var(--text-muted);">Baru saja</td>
-                  <td style="font-weight: 600; color: #fff;">Outfit Feeds Modest Daily</td>
-                  <td>Pashmina Plisket Ceruty Babydoll Premium</td>
-                  <td><span style="color: var(--accent-orange);">Modest Fashion</span></td>
-                  <td><span class="badge-status active">PUBLISHED</span></td>
-                  <td><a href="https://pinterest.com" target="_blank" style="color: #60a5fa; text-decoration: none;">↗ Buka Pin</a></td>
-                </tr>
-                <tr>
-                  <td style="font-size: 11px; color: var(--text-muted);">2 jam lalu</td>
-                  <td style="font-weight: 600; color: #fff;">Minimalist Bedroom Decor</td>
-                  <td>Lampu Meja Kamar Tidur Minimalis Nordic Warm</td>
-                  <td><span style="color: var(--accent-orange);">Home Decor</span></td>
-                  <td><span class="badge-status active">PUBLISHED</span></td>
-                  <td><a href="https://pinterest.com" target="_blank" style="color: #60a5fa; text-decoration: none;">↗ Buka Pin</a></td>
-                </tr>
+                <!-- Rendered dynamically via studio.js -->
               </tbody>
             </table>
           </div>

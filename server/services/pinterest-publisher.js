@@ -44,6 +44,7 @@ class PinterestPublisher {
       const historyRecord = dbService.addHistoryRecord({
         campaignName: pinItem.campaignName || 'Campaign Studio',
         title: pinItem.title,
+        platform: 'PINTEREST',
         board: pinItem.targetBoard || configuredBoardId || 'General',
         affiliateUrl: pinItem.affiliateUrl,
         pinterestPinUrl: result.pinUrl || `https://www.pinterest.com/pin/${Date.now().toString().slice(-10)}`,

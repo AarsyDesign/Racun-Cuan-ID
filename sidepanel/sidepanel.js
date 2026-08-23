@@ -1759,7 +1759,24 @@ Format Output WAJIB dalam JSON valid:
   }
 
   async handleSaveSettings() {
-    if (this.settingBackendUrl) this.settings.backendUrl = this.settingBackendUrl.value.trim() || 'http://localhost:3000';
+    if (this.settingBackendUrl) {
+      let rawUrl = this.settingBackendUrl.value.trim();
+      if (rawUrl) {
+        if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+          rawUrl = `https://${rawUrl}`;
+          this.settingBackendUrl.value = rawUrl;
+        }
+        this.settings.backendUrl = rawUrl;
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('pinmatrix_backend_url', rawUrl);
+        }
+      } else {
+        this.settings.backendUrl = 'http://localhost:3000';
+        if (typeof localStorage !== 'undefined') {
+          localStorage.removeItem('pinmatrix_backend_url');
+        }
+      }
+    }
     this.settings.aiProvider = this.settingAiProvider.value;
     this.settings.geminiApiKey = this.settingGeminiApiKey.value.trim();
     this.settings.geminiModel = this.settingGeminiModel.value;
@@ -1777,7 +1794,7 @@ Format Output WAJIB dalam JSON valid:
 
     await this.saveSettings();
     await this.checkBackendStatus();
-    this.showToast('✅ Semua pengaturan berhasil disimpan!', 'success');
+    this.showToast('✅ Semua pengaturan berhasil disimpan permanen!', 'success');
   }
 
   async testGoogleSheetsConnection() {

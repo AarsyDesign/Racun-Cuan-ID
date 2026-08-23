@@ -20,12 +20,14 @@ class PinMatrixStudio {
     this.campaigns = [];
     this.queue = [];
     this.history = [];
+    this.historyFilter = 'all';
     this.logs = [];
     this.botStatus = {};
     this.connections = {};
     this.selectedCampaignIds = new Set();
     this.selectedStudioProductIds = new Set();
     this.pollInterval = null;
+    this.countdownInterval = null;
 
     this.init();
   }
@@ -34,6 +36,7 @@ class PinMatrixStudio {
     this.bindEvents();
     this.setupPromptHelpers();
     this.initBackendSettingsUI();
+    this.startLiveCountdown();
     await this.fetchAllData();
     this.startLivePolling();
   }
@@ -311,6 +314,26 @@ class PinMatrixStudio {
         }
       });
     }
+
+    // Job History Actions & Filter Chips
+    const refreshHistoryBtn = document.getElementById('btn-refresh-history');
+    if (refreshHistoryBtn) {
+      refreshHistoryBtn.addEventListener('click', () => this.fetchHistory(true));
+    }
+
+    const clearHistoryBtn = document.getElementById('btn-clear-history');
+    if (clearHistoryBtn) {
+      clearHistoryBtn.addEventListener('click', () => this.handleClearHistory());
+    }
+
+    document.querySelectorAll('#history-filter-chips .filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('#history-filter-chips .filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this.historyFilter = chip.getAttribute('data-platform') || 'all';
+        this.renderHistory();
+      });
+    });
   }
 
   switchTab(tabId) {
@@ -360,6 +383,8 @@ class PinMatrixStudio {
       this.fetchProducts();
     } else if (tabId === 'sheets-hub') {
       this.fetchSheetsData();
+    } else if (tabId === 'job-history') {
+      this.fetchHistory();
     }
   }
 
@@ -368,15 +393,12 @@ class PinMatrixStudio {
     document.querySelectorAll('.prompt-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const targetId = chip.getAttribute('data-target');
-        const text = chip.getAttribute('data-text');
-        const field = document.getElementById(targetId);
-        if (field) {
-          if (field.value.trim().length > 0) {
-            field.value += `, ${text}`;
-          } else {
-            field.value = text;
-          }
-          field.focus();
+        const val = chip.getAttribute('data-val');
+        const target = document.getElementById(targetId);
+        if (target && val) {
+          const current = target.value.trim();
+          target.value = current ? `${current}, ${val}` : val;
+          target.focus();
         }
       });
     });
@@ -392,7 +414,8 @@ class PinMatrixStudio {
         this.fetchBotStatus(),
         this.fetchStats(),
         this.fetchConnections(),
-        this.fetchSheetsData()
+        this.fetchSheetsData(),
+        this.fetchHistory()
       ]);
     } catch (err) {
       console.warn('[AffiliatorKillerMatrix] Fetch error:', err);
@@ -406,6 +429,8 @@ class PinMatrixStudio {
         await this.fetchLogs();
       } else if (this.activeTab === 'preview-queue') {
         await this.fetchQueue();
+      } else if (this.activeTab === 'job-history') {
+        await this.fetchHistory();
       }
       await this.fetchBotStatus();
     }, 4000);
@@ -2196,6 +2221,142 @@ class PinMatrixStudio {
       }
     }
     this.showToast('✅ Semua pengaturan berhasil disimpan & disinkronkan!', 'success');
+  }
+
+  // ==========================================
+  // REAL-TIME LIVE POST COUNTDOWN TIMER
+  // ==========================================
+  startLiveCountdown() {
+    if (this.countdownInterval) clearInterval(this.countdownInterval);
+
+    this.countdownInterval = setInterval(() => {
+      const timerEl = document.getElementById('bot-countdown-text');
+      const badgeWrap = document.getElementById('topbar-countdown-wrap');
+      if (!timerEl) return;
+
+      if (!this.botStatus || !this.botStatus.isRunning) {
+        timerEl.textContent = 'PAUSED';
+        timerEl.style.color = '#ef4444';
+        if (badgeWrap) badgeWrap.style.opacity = '0.6';
+        return;
+      }
+
+      if (badgeWrap) badgeWrap.style.opacity = '1';
+
+      if (this.botStatus.isProcessing) {
+        timerEl.textContent = 'POSTING...';
+        timerEl.style.color = '#34d399';
+        return;
+      }
+
+      if (this.botStatus.nextDispatchAt) {
+        const targetMs = new Date(this.botStatus.nextDispatchAt).getTime();
+        const diffSeconds = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
+
+        if (diffSeconds <= 0) {
+          timerEl.textContent = 'READY / 00:00';
+          timerEl.style.color = '#34d399';
+        } else {
+          const mins = Math.floor(diffSeconds / 60);
+          const secs = diffSeconds % 60;
+          timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+          timerEl.style.color = '#fff';
+        }
+      } else {
+        const mins = this.botStatus.intervalMinutes || 35;
+        timerEl.textContent = `${mins}:00`;
+        timerEl.style.color = '#fff';
+      }
+    }, 1000);
+  }
+
+  // ==========================================
+  // UNIFIED MULTI-CHANNEL HISTORY (TELEGRAM & PINTEREST)
+  // ==========================================
+  async fetchHistory(showToast = false) {
+    try {
+      const res = await fetch(`${this.apiBase}/history`);
+      const data = await res.json();
+      if (data.success) {
+        this.history = data.history || [];
+        this.renderHistory();
+        if (showToast) this.showToast('🔄 Riwayat publikasi diperbarui', 'info');
+      }
+    } catch (e) {
+      console.error('[Studio History Error]', e);
+    }
+  }
+
+  renderHistory() {
+    const tbody = document.getElementById('history-table-body');
+    const countAll = document.getElementById('count-hist-all');
+    const countTg = document.getElementById('count-hist-tg');
+    const countPin = document.getElementById('count-hist-pin');
+
+    if (countAll) countAll.textContent = this.history.length;
+    if (countTg) countTg.textContent = this.history.filter(h => (h.platform || '').toUpperCase() === 'TELEGRAM').length;
+    if (countPin) countPin.textContent = this.history.filter(h => (h.platform || '').toUpperCase() === 'PINTEREST' || !h.platform).length;
+
+    if (!tbody) return;
+
+    let filtered = this.history;
+    if (this.historyFilter && this.historyFilter !== 'all') {
+      filtered = this.history.filter(h => (h.platform || 'PINTEREST').toUpperCase() === this.historyFilter.toUpperCase());
+    }
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 28px; color: var(--text-muted);">Belum ada riwayat publikasi ${this.historyFilter !== 'all' ? `untuk ${this.historyFilter}` : ''}.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(item => {
+      const dateStr = item.publishedAt || item.createdAt || new Date().toISOString();
+      const formattedTime = new Date(dateStr).toLocaleString('id-ID', {
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+      });
+
+      const isTelegram = (item.platform || '').toUpperCase() === 'TELEGRAM';
+      const platformBadge = isTelegram 
+        ? `<span class="badge-status" style="background: rgba(36, 161, 222, 0.15); color: #38bdf8; border: 1px solid rgba(36, 161, 222, 0.35); font-weight: 700;">📢 Telegram <span style="font-size: 10px; opacity: 0.85;">(${item.channelId || '@channel'})</span></span>`
+        : `<span class="badge-status" style="background: rgba(230, 0, 35, 0.15); color: #f87171; border: 1px solid rgba(230, 0, 35, 0.35); font-weight: 700;">📌 Pinterest <span style="font-size: 10px; opacity: 0.85;">[${item.board || 'General'}]</span></span>`;
+
+      let linkHtml = '-';
+      if (item.telegramPostUrl) {
+        linkHtml = `<a href="${item.telegramPostUrl}" target="_blank" style="color: #38bdf8; font-weight: 600; text-decoration: none;">↗ Buka Telegram</a>`;
+      } else if (item.pinterestPinUrl) {
+        linkHtml = `<a href="${item.pinterestPinUrl}" target="_blank" style="color: #f87171; font-weight: 600; text-decoration: none;">↗ Buka Pin</a>`;
+      } else if (item.affiliateUrl) {
+        linkHtml = `<a href="${item.affiliateUrl}" target="_blank" style="color: #60a5fa; font-weight: 600; text-decoration: none;">🔗 Link Aff</a>`;
+      }
+
+      return `
+        <tr>
+          <td style="font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono);">${formattedTime}</td>
+          <td>${platformBadge}</td>
+          <td style="font-weight: 600; color: #fff; font-size: 13px; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this.escapeHtml(item.title || '')}">
+            ${this.escapeHtml(item.title || 'Produk Promo')}
+          </td>
+          <td><span class="badge-status active">PUBLISHED</span></td>
+          <td>${linkHtml}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async handleClearHistory() {
+    if (confirm('Hapus seluruh riwayat publikasi (Telegram & Pinterest)?')) {
+      try {
+        const res = await fetch(`${this.apiBase}/history`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          this.history = [];
+          this.renderHistory();
+          this.showToast('🗑️ Seluruh riwayat publikasi berhasil dibersihkan', 'success');
+        }
+      } catch (e) {
+        this.showToast('Gagal membersihkan riwayat: ' + e.message, 'error');
+      }
+    }
   }
 
   escapeHtml(text) {

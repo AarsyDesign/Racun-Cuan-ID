@@ -36,6 +36,7 @@ app.use('/api/connections', require('./routes/connections'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/pinterest', require('./routes/pinterest'));
 app.use('/api/telegram', require('./routes/telegram'));
+app.use('/api/history', require('./routes/history'));
 
 // Mount Core Scraper & Integration Routes
 app.use('/api/ai', require('./routes/ai'));

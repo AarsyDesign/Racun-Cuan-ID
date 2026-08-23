@@ -49,18 +49,34 @@ class BotWorker {
     const campaigns = dbService.getCampaigns();
     const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE');
 
-    const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
+    const intervalMinutes = config.intervalMinutes || 35;
+    const intervalMs = intervalMinutes * 60 * 1000;
     const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
-    const timeElapsed = Date.now() - lastDispatchedAt;
-    const nextDispatchInMinutes = lastDispatchedAt > 0 && timeElapsed < intervalMs 
-      ? Math.max(1, Math.ceil((intervalMs - timeElapsed) / 60000))
-      : 0;
+    const now = Date.now();
+    const timeElapsed = lastDispatchedAt > 0 ? (now - lastDispatchedAt) : intervalMs;
+
+    let nextDispatchSeconds = 0;
+    let nextDispatchAt = null;
+
+    if (config.isRunning) {
+      if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
+        nextDispatchSeconds = Math.max(0, Math.ceil((intervalMs - timeElapsed) / 1000));
+        nextDispatchAt = new Date(lastDispatchedAt + intervalMs).toISOString();
+      } else {
+        nextDispatchSeconds = 0;
+        nextDispatchAt = new Date().toISOString();
+      }
+    }
+
+    const nextDispatchInMinutes = Math.ceil(nextDispatchSeconds / 60);
 
     return {
       isRunning: config.isRunning,
       isProcessing: this.isProcessing,
-      intervalMinutes: config.intervalMinutes || 35,
+      intervalMinutes,
+      nextDispatchSeconds,
       nextDispatchInMinutes,
+      nextDispatchAt,
       lastDispatchedAt: config.lastDispatchedAt || null,
       dailyCap: config.dailyCap || 50,
       dailyCountToday: config.dailyCountToday || 0,
