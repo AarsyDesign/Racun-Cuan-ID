@@ -26,6 +26,7 @@ class PinMatrixStudio {
     this.connections = {};
     this.selectedCampaignIds = new Set();
     this.selectedStudioProductIds = new Set();
+    this.selectedQueueIds = new Set();
     this.pollInterval = null;
     this.countdownInterval = null;
 
@@ -70,6 +71,18 @@ class PinMatrixStudio {
           this.switchTab(tab);
           return;
         }
+      }
+
+      // 1.5 Queue Card Checkbox handling
+      if (e.target.classList.contains('queue-card-checkbox')) {
+        const id = e.target.getAttribute('data-id');
+        if (e.target.checked) {
+          this.selectedQueueIds.add(id);
+        } else {
+          this.selectedQueueIds.delete(id);
+        }
+        this.updateQueueBulkBar();
+        return;
       }
 
       // 2. Action buttons with data-action
@@ -209,6 +222,26 @@ class PinMatrixStudio {
     const approveAllBtn = document.getElementById('btn-queue-approve-all');
     if (approveAllBtn) {
       approveAllBtn.addEventListener('click', () => this.handleBatchApproveQueue());
+    }
+
+    const clearAllQueueBtn = document.getElementById('btn-clear-all-queue');
+    if (clearAllQueueBtn) {
+      clearAllQueueBtn.addEventListener('click', () => this.handleClearAllQueue());
+    }
+
+    const selectAllQueueCb = document.getElementById('checkbox-queue-select-all');
+    if (selectAllQueueCb) {
+      selectAllQueueCb.addEventListener('change', (e) => this.handleToggleSelectAllQueue(e.target.checked));
+    }
+
+    const batchApproveSelectedQueueBtn = document.getElementById('btn-batch-approve-selected-queue');
+    if (batchApproveSelectedQueueBtn) {
+      batchApproveSelectedQueueBtn.addEventListener('click', () => this.handleBatchApproveSelectedQueue());
+    }
+
+    const batchDeleteSelectedQueueBtn = document.getElementById('btn-batch-delete-selected-queue');
+    if (batchDeleteSelectedQueueBtn) {
+      batchDeleteSelectedQueueBtn.addEventListener('click', () => this.handleBatchDeleteSelectedQueue());
     }
 
     const exportCsvBtn = document.getElementById('btn-export-queue-csv');
@@ -654,6 +687,7 @@ class PinMatrixStudio {
           <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Pilih campaign di Campaign Studio atau produk Shopee lalu klik "Acc Queue" untuk membuat antrean konten baru.</p>
         </div>
       `;
+      this.updateQueueBulkBar();
       return;
     }
 
@@ -672,6 +706,7 @@ class PinMatrixStudio {
     container.innerHTML = this.queue.map(item => {
       const isPending = item.status === 'PENDING_APPROVAL';
       const isQueued = item.status === 'QUEUED';
+      const isSelected = this.selectedQueueIds.has(item.id);
       const tags = (item.hashtags || []).map(t => `<span style="font-size: 10px; color: var(--accent-orange);">${t}</span>`).join(' ');
 
       let scheduleHtml = '';
@@ -710,8 +745,11 @@ class PinMatrixStudio {
       }
 
       return `
-        <div class="queue-card" data-id="${item.id}">
+        <div class="queue-card ${isSelected ? 'selected' : ''}" data-id="${item.id}" style="${isSelected ? 'border-color: #f97316; box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.4);' : ''}">
           <div class="queue-card-image-wrap">
+            <div style="position: absolute; top: 4px; left: 4px; z-index: 10;">
+              <input type="checkbox" class="queue-card-checkbox" data-id="${item.id}" ${isSelected ? 'checked' : ''} style="accent-color: var(--accent-orange); width: 16px; height: 16px; cursor: pointer; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.8));">
+            </div>
             <img src="${item.imageUrl || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'}" alt="${this.escapeHtml(item.title)}" class="queue-card-image" onerror="this.src='https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'">
             <div class="queue-card-status-badge">
               <span class="badge-status ${isPending ? 'paused' : 'active'}" style="font-size: 8.5px; padding: 1px 5px;">
@@ -757,6 +795,8 @@ class PinMatrixStudio {
         </div>
       `;
     }).join('');
+
+    this.updateQueueBulkBar();
   }
 
   renderLogs() {
@@ -1011,6 +1051,102 @@ class PinMatrixStudio {
       }
     } catch (e) {
       this.showToast('Gagal batch approve', 'error');
+    }
+  }
+
+  updateQueueBulkBar() {
+    const countSelected = document.getElementById('count-queue-selected');
+    const countTotal = document.getElementById('count-queue-total');
+    const cbAll = document.getElementById('checkbox-queue-select-all');
+    const total = this.queue ? this.queue.length : 0;
+    const selected = this.selectedQueueIds ? this.selectedQueueIds.size : 0;
+
+    if (countSelected) countSelected.textContent = selected;
+    if (countTotal) countTotal.textContent = total;
+    if (cbAll) {
+      cbAll.checked = total > 0 && selected === total;
+      cbAll.indeterminate = selected > 0 && selected < total;
+    }
+  }
+
+  handleToggleSelectAllQueue(checked) {
+    if (checked) {
+      this.selectedQueueIds = new Set((this.queue || []).map(q => q.id));
+    } else {
+      this.selectedQueueIds.clear();
+    }
+    this.renderPreviewQueue();
+  }
+
+  async handleClearAllQueue() {
+    if (!this.queue || this.queue.length === 0) {
+      this.showToast('ℹ️ Antrean Preview Queue sudah kosong.', 'info');
+      return;
+    }
+    if (!confirm(`⚠️ Hapus SEMUA (${this.queue.length}) item dari Preview Queue? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+    try {
+      const res = await fetch(`${this.apiBase}/queue`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        this.selectedQueueIds.clear();
+        this.showToast('🧹 Semua item di Preview Queue berhasil dibersihkan!', 'success');
+        await this.fetchQueue();
+        await this.fetchLogs();
+      }
+    } catch (err) {
+      this.showToast(`❌ Gagal membersihkan antrean: ${err.message}`, 'error');
+    }
+  }
+
+  async handleBatchDeleteSelectedQueue() {
+    const ids = Array.from(this.selectedQueueIds || []);
+    if (ids.length === 0) {
+      this.showToast('⚠️ Pilih minimal satu item antrean dengan mencentang checkbox!', 'warning');
+      return;
+    }
+    if (!confirm(`⚠️ Hapus ${ids.length} item antrean yang dipilih?`)) return;
+
+    try {
+      const res = await fetch(`${this.apiBase}/queue/batch-delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.selectedQueueIds.clear();
+        this.showToast(`🗑️ Berhasil menghapus ${data.count || ids.length} item terpilih!`, 'success');
+        await this.fetchQueue();
+        await this.fetchLogs();
+      }
+    } catch (err) {
+      this.showToast(`❌ Gagal menghapus item terpilih: ${err.message}`, 'error');
+    }
+  }
+
+  async handleBatchApproveSelectedQueue() {
+    const ids = Array.from(this.selectedQueueIds || []);
+    if (ids.length === 0) {
+      this.showToast('⚠️ Pilih minimal satu item antrean dengan mencentang checkbox!', 'warning');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${this.apiBase}/queue/batch-approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.selectedQueueIds.clear();
+        this.showToast(`✅ Berhasil meng-approve ${data.count || ids.length} item terpilih!`, 'success');
+        await this.fetchQueue();
+        await this.fetchLogs();
+      }
+    } catch (err) {
+      this.showToast(`❌ Gagal approve item terpilih: ${err.message}`, 'error');
     }
   }
 

@@ -88,6 +88,17 @@ router.post('/batch-approve', async (req, res) => {
   }
 });
 
+// POST /api/queue/batch-delete - Delete multiple selected items
+router.post('/batch-delete', (req, res) => {
+  try {
+    const { ids = [] } = req.body;
+    const queue = queueService.batchRemove(ids);
+    res.json({ success: true, count: ids.length, queue });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/queue/:id/dispatch - Dispatch item to Pinterest immediately
 router.post('/:id/dispatch', async (req, res) => {
   try {

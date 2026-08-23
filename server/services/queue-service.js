@@ -33,11 +33,22 @@ class QueueService {
   }
 
   removeItem(id) {
-    return dbService.removeFromQueue(id);
+    const res = dbService.removeFromQueue(id);
+    this.recalculateSchedules();
+    return res;
+  }
+
+  batchRemove(ids = []) {
+    ids.forEach(id => dbService.removeFromQueue(id));
+    this.recalculateSchedules();
+    dbService.addLog('INFO', 'QUEUE', `🗑️ Berhasil menghapus ${ids.length} item antrean.`);
+    return dbService.getQueue();
   }
 
   clearQueue() {
-    return dbService.clearQueue();
+    const res = dbService.clearQueue();
+    dbService.addLog('INFO', 'QUEUE', '🧹 Semua antrean Preview Queue telah dibersihkan.');
+    return res;
   }
 
   /**
