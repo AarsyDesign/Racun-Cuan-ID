@@ -28,10 +28,10 @@ class BotWorker {
     dbService.addLog('INFO', 'WORKER', '▶️ Bot Worker diaktifkan: Memulai pemantauan antrean & kampanye.');
 
     if (this.timer) clearInterval(this.timer);
-    // Interval check every 30 seconds
-    this.timer = setInterval(() => this.tick(), 30000);
+    // Interval check every 10 seconds
+    this.timer = setInterval(() => this.tick(), 10000);
     // Trigger immediate first check
-    setTimeout(() => this.tick(), 1500);
+    setTimeout(() => this.tick(), 1000);
   }
 
   pause() {
@@ -58,8 +58,14 @@ class BotWorker {
     let nextDispatchSeconds = 0;
     let nextDispatchAt = null;
 
+    const firstQueued = queue.find(q => q.status === 'QUEUED');
+
     if (config.isRunning) {
-      if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
+      if (firstQueued && firstQueued.scheduledAt) {
+        nextDispatchAt = firstQueued.scheduledAt;
+        const diffMs = new Date(nextDispatchAt).getTime() - now;
+        nextDispatchSeconds = Math.max(0, Math.ceil(diffMs / 1000));
+      } else if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
         nextDispatchSeconds = Math.max(0, Math.ceil((intervalMs - timeElapsed) / 1000));
         nextDispatchAt = new Date(lastDispatchedAt + intervalMs).toISOString();
       } else {
@@ -104,19 +110,27 @@ class BotWorker {
       const readyItem = queue.find(q => q.status === 'QUEUED');
 
       if (readyItem) {
-        // Check if interval (e.g. 35 minutes) has passed since last dispatch
         const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
         const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
         const now = Date.now();
         const timeElapsed = now - lastDispatchedAt;
 
+        // Check if cooldown interval has elapsed
         if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
-          // Still waiting for the 35 minutes interval to elapse
           this.isProcessing = false;
           return;
         }
 
-        dbService.addLog('INFO', 'WORKER', `⚡ Menemukan Produk siap diposting (Jeda ${config.intervalMinutes || 35} mnt): "${readyItem.title.substring(0, 35)}..."`);
+        // If scheduledAt exists, check if it is due (with 3s grace)
+        if (readyItem.scheduledAt) {
+          const schedTime = new Date(readyItem.scheduledAt).getTime();
+          if (now < schedTime - 3000) {
+            this.isProcessing = false;
+            return;
+          }
+        }
+
+        dbService.addLog('INFO', 'WORKER', `⚡ Menemukan Produk siap diposting: "${readyItem.title.substring(0, 35)}..."`);
         await queueService.dispatchItem(readyItem.id);
         dbService.updateBotConfig({ 
           lastDispatchedAt: new Date().toISOString(),

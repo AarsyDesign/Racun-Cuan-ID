@@ -676,17 +676,23 @@ class PinMatrixStudio {
 
       let scheduleHtml = '';
       if (isQueued) {
-        const itemScheduleMs = baseTimeMs + (queuedIndex * intervalMs);
+        const itemScheduleMs = item.scheduledAt ? new Date(item.scheduledAt).getTime() : (baseTimeMs + (queuedIndex * intervalMs));
         const scheduleDate = new Date(itemScheduleMs);
         const timeStr = scheduleDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
         
-        const diffMins = Math.max(0, Math.round((itemScheduleMs - Date.now()) / 60000));
-        let relativeText = diffMins <= 1 ? '⚡ Segera' : `⏱️ ±${diffMins} mnt lagi`;
+        const diffSeconds = Math.floor((itemScheduleMs - Date.now()) / 1000);
+        let relativeText = '⚡ Segera Diposting';
+        if (diffSeconds > 60) {
+          const mins = Math.ceil(diffSeconds / 60);
+          relativeText = `⏱️ ±${mins} mnt lagi`;
+        } else if (diffSeconds > 0) {
+          relativeText = `⏱️ ${diffSeconds} detik lagi`;
+        }
 
         scheduleHtml = `
           <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 10px; margin: 6px 0 2px; font-size: 11px; display: flex; align-items: center; justify-content: space-between;">
             <span style="color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 4px;">
-              <span>📅 Jadwal:</span> <strong>${timeStr}</strong>
+              <span>📅 Jadwal:</span> <strong style="color: #fff;">${timeStr}</strong>
             </span>
             <span style="color: #a7f3d0; font-size: 10.5px; background: rgba(16, 185, 129, 0.18); padding: 1px 6px; border-radius: 4px; font-weight: 600;">
               ${relativeText}

@@ -41,6 +41,35 @@ class QueueService {
   }
 
   /**
+   * Recalculates and stores fixed scheduledAt timestamps for all QUEUED items
+   */
+  recalculateSchedules() {
+    const config = dbService.getBotConfig();
+    const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
+    const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
+    const now = Date.now();
+
+    let baseMs = now;
+    if (lastDispatchedAt > 0 && (now - lastDispatchedAt) < intervalMs) {
+      baseMs = lastDispatchedAt + intervalMs;
+    } else {
+      baseMs = now;
+    }
+
+    const queue = dbService.getQueue();
+    let queuedIndex = 0;
+
+    queue.forEach(item => {
+      if (item.status === 'QUEUED') {
+        const itemScheduleMs = baseMs + (queuedIndex * intervalMs);
+        const schedIso = new Date(itemScheduleMs).toISOString();
+        dbService.updateQueueItem(item.id, { scheduledAt: schedIso });
+        queuedIndex++;
+      }
+    });
+  }
+
+  /**
    * Approves a single pending queue item
    */
   async approveItem(id, autoDispatch = false) {
@@ -56,6 +85,7 @@ class QueueService {
       approvedAt: new Date().toISOString()
     });
 
+    this.recalculateSchedules();
     dbService.addLog('INFO', 'QUEUE', `Item ${id} di-approve dan siap dieksekusi oleh Bot Worker.`);
     return updated;
   }
@@ -79,6 +109,7 @@ class QueueService {
       approved.push(item.id);
     });
 
+    this.recalculateSchedules();
     dbService.addLog('SUCCESS', 'QUEUE', `✅ Berhasil meng-approve ${approved.length} item antrean.`);
     return { count: approved.length, approvedIds: approved };
   }
@@ -96,29 +127,45 @@ class QueueService {
     let telegramRes = null;
     let errors = [];
 
+    const connections = dbService.getConnections();
+
     // 1. Pinterest dispatch attempt
-    try {
-      publishRes = await pinterestPublisher.publishPin(item, options);
-    } catch (pErr) {
-      errors.push(`Pinterest: ${pErr.message}`);
+    const hasPinterest = !!(connections.pinterestAccessToken || options.accessToken);
+    if (hasPinterest) {
+      try {
+        publishRes = await pinterestPublisher.publishPin(item, options);
+      } catch (pErr) {
+        errors.push(`Pinterest: ${pErr.message}`);
+      }
     }
 
     // 2. Telegram scheduled dispatch attempt
-    const connections = dbService.getConnections();
-    if (connections.telegramAutoPost && connections.telegramChannelId) {
+    const tgToken = options.token || connections.telegramBotToken || process.env.TELEGRAM_BOT_TOKEN;
+    const tgChannel = options.chatId || connections.telegramChannelId || process.env.TELEGRAM_CHANNEL_ID;
+    if (tgToken && tgChannel) {
       try {
         telegramRes = await telegramPublisher.publishPin({
           ...item,
           pinterestPinUrl: publishRes?.pinUrl || null
-        });
+        }, options);
       } catch (tgErr) {
         errors.push(`Telegram: ${tgErr.message}`);
         dbService.addLog('WARNING', 'TELEGRAM', `Auto-post Telegram gagal: ${tgErr.message}`);
       }
     }
 
+    // Fallback: If neither was configured, try hybrid / default mode
+    if (!hasPinterest && !tgChannel) {
+      try {
+        publishRes = await pinterestPublisher.publishPin(item, options);
+      } catch (pErr) {
+        errors.push(`Publisher: ${pErr.message}`);
+      }
+    }
+
     if (publishRes || telegramRes) {
       dbService.removeFromQueue(id);
+      this.recalculateSchedules();
       return {
         success: true,
         item,
@@ -131,6 +178,7 @@ class QueueService {
         status: 'FAILED',
         lastError: errMsg
       });
+      dbService.addLog('ERROR', 'DISPATCH', `❌ Gagal dispatch "${item.title.substring(0, 30)}": ${errMsg}`);
       throw new Error(errMsg);
     }
   }

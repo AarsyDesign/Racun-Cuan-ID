@@ -47,7 +47,7 @@ router.post('/:id/enqueue-matrix', (req, res) => {
       return res.status(404).json({ success: false, error: 'Produk tidak ditemukan' });
     }
 
-    const { targetBoard, customTitle, customDescription } = req.body;
+    const { targetBoard, customTitle, customDescription, autoApprove } = req.body;
     const connections = dbService.getConnections();
 
     const queueItem = dbService.addToQueue({
@@ -59,9 +59,12 @@ router.post('/:id/enqueue-matrix', (req, res) => {
       affiliateUrl: prod.affiliateUrl || prod.productUrl || 'https://shopee.co.id',
       targetBoard: targetBoard || connections.pinterestBoardName || 'Inspirasi & Rekomendasi Shopee',
       boardId: connections.pinterestBoardId || null,
-      status: 'PENDING_APPROVAL',
+      status: autoApprove ? 'QUEUED' : 'PENDING_APPROVAL',
       source: 'SHOPEE_SCRAPER'
     });
+
+    const queueService = require('../services/queue-service');
+    queueService.recalculateSchedules();
 
     dbService.addLog('SUCCESS', 'QUEUE', `📥 Produk Shopee "${prod.title.substring(0, 35)}..." dimasukkan ke Antrean Matrix.`);
 
