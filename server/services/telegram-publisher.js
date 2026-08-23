@@ -178,6 +178,84 @@ class TelegramPublisher {
   }
 
   /**
+   * Helper to detect clean category name from title or board
+   */
+  detectCategory(title = '', board = '') {
+    if (board && board !== 'Inspirasi & Rekomendasi Shopee' && board !== 'General' && board !== 'Shopee Scraped Products' && board !== 'Inspirasi & Rekomendasi Produk') {
+      return board;
+    }
+    const t = (title || '').toLowerCase();
+    if (t.includes('sepatu') || t.includes('sandal') || t.includes('sneaker') || t.includes('heels') || t.includes('boots')) return 'Sepatu & Sandal';
+    if (t.includes('celana') || t.includes('kaos') || t.includes('baju') || t.includes('kemeja') || t.includes('jaket') || t.includes('hoodie') || t.includes('dress') || t.includes('rok') || t.includes('t-shirt') || t.includes('sweater') || t.includes('outer') || t.includes('vest') || t.includes('cargo')) return 'Pakaian & Fashion';
+    if (t.includes('tas') || t.includes('dompet') || t.includes('backpack') || t.includes('tote') || t.includes('waistbag') || t.includes('slingbag')) return 'Tas & Aksesoris';
+    if (t.includes('parfum') || t.includes('perfume') || t.includes('skincare') || t.includes('serum') || t.includes('lip') || t.includes('cream') || t.includes('body') || t.includes('lotion') || t.includes('cushion') || t.includes('sunscreen') || t.includes('edp') || t.includes('edt')) return 'Kecantikan & Perawatan';
+    if (t.includes('mug') || t.includes('termos') || t.includes('tumbler') || t.includes('botol') || t.includes('gelas') || t.includes('dapur') || t.includes('lampu') || t.includes('sprei') || t.includes('bantal') || t.includes('sapu') || t.includes('rak')) return 'Perlengkapan Rumah & Living';
+    if (t.includes('headset') || t.includes('tws') || t.includes('earphone') || t.includes('speaker') || t.includes('case') || t.includes('charger') || t.includes('holder') || t.includes('kabel') || t.includes('hp') || t.includes('gadget') || t.includes('powerbank') || t.includes('smartwatch') || t.includes('keyboard') || t.includes('mouse')) return 'Gadget & Elektronik';
+    if (t.includes('snack') || t.includes('makanan') || t.includes('minuman') || t.includes('kopi') || t.includes('tea') || t.includes('coklat') || t.includes('biskuit')) return 'Makanan & Minuman';
+    if (t.includes('jam') || t.includes('kalung') || t.includes('cincin') || t.includes('gelang') || t.includes('kacamata') || t.includes('topi') || t.includes('ikat pinggang') || t.includes('sabuk')) return 'Aksesoris & Fashion';
+    if (t.includes('bayi') || t.includes('anak') || t.includes('mainan') || t.includes('pampers')) return 'Ibu & Bayi';
+    return (board && board.trim()) ? board : 'Produk Pilihan';
+  }
+
+  /**
+   * Builds clean, concise Telegram HTML caption (Judul, Harga, Rating, Kategori, Link, Hashtag)
+   */
+  buildCleanCaption(item, safeAffiliateUrl) {
+    const title = this.escapeHtml((item.title || 'Rekomendasi Produk Pilihan').trim());
+    const category = this.detectCategory(item.title, item.category || item.targetBoard);
+
+    // Extract price
+    let priceFormatted = null;
+    let originalPrice = item.originalPrice ? `Rp ${Number(item.originalPrice).toLocaleString('id-ID')}` : null;
+    const discount = item.discount || (item.discountPercentage ? `${item.discountPercentage}%` : null);
+
+    if (item.discountedPrice) {
+      priceFormatted = `Rp ${Number(item.discountedPrice).toLocaleString('id-ID')}`;
+    } else if (item.price) {
+      priceFormatted = `Rp ${Number(item.price).toLocaleString('id-ID')}`;
+    } else if (item.description) {
+      const match = item.description.match(/(?:Harga(?:\s*Diskon)?:\s*)?(Rp\s*[\d\.\,]+)/i);
+      if (match) priceFormatted = match[1].replace(/\s+/g, ' ');
+    }
+
+    // Extract rating & sold
+    let rating = item.rating || '4.9';
+    let sold = item.soldCount ? `${item.soldCount} terjual` : 'Terlaris';
+    if (item.description && (!item.rating || !item.soldCount)) {
+      const rMatch = item.description.match(/Rating:\s*([\d\.]+)(?:\s*\(([^)]+)\))?/i);
+      if (rMatch) {
+        rating = rMatch[1];
+        if (rMatch[2]) sold = rMatch[2].includes('terjual') ? rMatch[2] : `${rMatch[2]} terjual`;
+      }
+    }
+
+    // Build structured clean caption
+    let caption = `✨ <b>${title}</b>\n\n`;
+
+    if (priceFormatted) {
+      if (originalPrice && originalPrice !== priceFormatted) {
+        caption += `💰 <b>Harga:</b> <s>${originalPrice}</s> ➡️ <b>${priceFormatted}</b>`;
+        if (discount) caption += ` <i>(${discount} OFF)</i>`;
+        caption += `\n`;
+      } else {
+        caption += `💰 <b>Harga:</b> <b>${priceFormatted}</b>\n`;
+      }
+    }
+
+    caption += `⭐ <b>Rating:</b> ${rating} (${sold})\n`;
+    caption += `🏷️ <b>Kategori:</b> ${this.escapeHtml(category)}\n\n`;
+
+    caption += `🛒 <b>Link Pembelian Shopee:</b>\n`;
+    caption += `👉 <a href="${safeAffiliateUrl}">${safeAffiliateUrl}</a>\n\n`;
+
+    // Hashtags
+    const tags = item.aiContent?.hashtags || item.hashtags || ['#ShopeeHaul', '#RacunShopee', '#RekomendasiShopee', '#ShopeeAffiliate'];
+    caption += tags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
+
+    return caption;
+  }
+
+  /**
    * Formats and publishes a Shopee Product to Telegram Channel
    */
   async publishProduct(product, options = {}) {
@@ -189,50 +267,11 @@ class TelegramPublisher {
       throw new Error('Telegram Channel ID belum dikonfigurasi. Silakan atur di menu Connections.');
     }
 
-    const title = this.escapeHtml(product.title || 'Rekomendasi Produk Pilihan');
-    const originalPrice = product.originalPrice ? `Rp ${Number(product.originalPrice).toLocaleString('id-ID')}` : null;
-    const discountedPrice = product.discountedPrice ? `Rp ${Number(product.discountedPrice).toLocaleString('id-ID')}` : null;
-    const discount = product.discount || (product.discountPercentage ? `${product.discountPercentage}%` : null);
-    const rating = product.rating || '4.9';
-    const sold = product.soldCount || 'Terlaris';
-    const affiliateUrl = product.affiliateUrl || product.productUrl || 'https://shopee.co.id';
+    const safeAffiliateUrl = this.ensureValidPublicUrl(product.affiliateUrl || product.productUrl || 'https://shopee.co.id', product.title);
     const imageUrl = product.imageUrl || product.galleryImages?.[0] || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80';
 
-    // Build persuasive Telegram HTML Caption
-    let caption = `🔥 <b>${title}</b>\n\n`;
-
-    if (discountedPrice) {
-      if (originalPrice && originalPrice !== discountedPrice) {
-        caption += `💰 <b>Harga Spesial:</b> <s>${originalPrice}</s> ➡️ <b>${discountedPrice}</b>`;
-        if (discount) caption += ` <i>(${discount} OFF)</i>`;
-        caption += `\n`;
-      } else {
-        caption += `💰 <b>Harga:</b> <b>${discountedPrice}</b>\n`;
-      }
-    }
-
-    caption += `⭐ <b>Rating:</b> ${rating} / 5.0 (${sold})\n`;
-    if (product.shopLocation) {
-      caption += `📍 <b>Pengiriman:</b> ${this.escapeHtml(product.shopLocation)}\n`;
-    }
-
-    // AI summary or custom note
-    if (product.aiContent?.pinDescription) {
-      const shortDesc = product.aiContent.pinDescription.substring(0, 200).replace(/#/g, '');
-      caption += `\n📝 <i>${this.escapeHtml(shortDesc)}</i>\n`;
-    } else if (product.description) {
-      const shortDesc = product.description.substring(0, 160);
-      caption += `\n📝 <i>${this.escapeHtml(shortDesc)}</i>\n`;
-    }
-
-    const safeAffiliateUrl = this.ensureValidPublicUrl(product.affiliateUrl || product.productUrl || 'https://shopee.co.id', product.title);
-
-    caption += `\n🛒 <b>Link Pembelian Shopee:</b>\n`;
-    caption += `👉 <a href="${safeAffiliateUrl}">${safeAffiliateUrl}</a>\n\n`;
-
-    // Hashtags
-    const tags = product.aiContent?.hashtags || ['#RacunShopee', '#ShopeeHaul', '#DiskonShopee', '#SpillProduk'];
-    caption += tags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
+    // Build concise, clean caption
+    const caption = this.buildCleanCaption(product, safeAffiliateUrl);
 
     const inlineButtons = [
       [
@@ -288,7 +327,7 @@ class TelegramPublisher {
       title: product.title,
       platform: 'TELEGRAM',
       channelId: chatId,
-      affiliateUrl,
+      affiliateUrl: safeAffiliateUrl,
       telegramPostUrl: postLink,
       status: 'PUBLISHED',
       publishedAt: new Date().toISOString(),
@@ -319,28 +358,12 @@ class TelegramPublisher {
       throw new Error('Telegram Channel ID belum dikonfigurasi.');
     }
 
-    const title = this.escapeHtml(queueItem.title || 'Inspirasi & Rekomendasi Produk');
-    const affiliateUrl = queueItem.affiliateUrl || 'https://shopee.co.id';
+    const safeAffiliateUrl = this.ensureValidPublicUrl(queueItem.affiliateUrl || 'https://shopee.co.id', queueItem.title);
     const imageUrl = queueItem.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80';
 
-    let caption = `✨ <b>${title}</b>\n\n`;
+    // Build concise clean caption
+    const caption = this.buildCleanCaption(queueItem, safeAffiliateUrl);
 
-    if (queueItem.description) {
-      const cleanDesc = this.escapeHtml(queueItem.description.substring(0, 450));
-      caption += `${cleanDesc}\n\n`;
-    }
-
-    if (queueItem.targetBoard) {
-      caption += `🏷️ <i>Kategori: ${this.escapeHtml(queueItem.targetBoard)}</i>\n`;
-    }
-
-    const safeAffiliateUrl = this.ensureValidPublicUrl(queueItem.affiliateUrl || 'https://shopee.co.id', queueItem.title);
-
-    caption += `\n🛒 <b>Link Pembelian Shopee:</b>\n`;
-    caption += `👉 <a href="${safeAffiliateUrl}">${safeAffiliateUrl}</a>\n\n`;
-
-    const tags = queueItem.hashtags || ['#RacunShopee', '#ShopeeInspo', '#AestheticOOTD'];
-    caption += tags.map(t => t.startsWith('#') ? t : `#${t}`).join(' ');
     const inlineButtons = [
       [
         { text: '🛍️ LIHAT PRODUK & ORDER DI SHOPEE', url: safeAffiliateUrl }

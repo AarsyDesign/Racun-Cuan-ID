@@ -50,10 +50,19 @@ router.post('/:id/enqueue-matrix', (req, res) => {
     const { targetBoard, customTitle, customDescription, autoApprove } = req.body;
     const connections = dbService.getConnections();
 
+    const priceFormatted = prod.discountedPrice ? `Rp ${Number(prod.discountedPrice).toLocaleString('id-ID')}` : (prod.price ? `Rp ${Number(prod.price).toLocaleString('id-ID')}` : '');
+    const soldFormatted = prod.soldCount ? `${prod.soldCount} terjual` : 'Terlaris';
+
     const queueItem = dbService.addToQueue({
       campaignName: 'Shopee Scraped Products',
       title: customTitle || prod.aiContent?.pinTitle || prod.title,
-      description: customDescription || prod.aiContent?.pinDescription || `Rekomendasi Produk: ${prod.title}\n\nHarga Diskon: Rp ${(prod.discountedPrice || 0).toLocaleString('id-ID')}\nRating: ${prod.rating || '4.9'} (${prod.soldCount || 'Terjual'})\nCek promo di tautan produk.`,
+      price: prod.price || prod.discountedPrice || 0,
+      originalPrice: prod.originalPrice || null,
+      discountedPrice: prod.discountedPrice || prod.price || 0,
+      discount: prod.discount || null,
+      rating: prod.rating || '4.9',
+      soldCount: prod.soldCount || 'Terlaris',
+      description: customDescription || prod.aiContent?.pinDescription || `${priceFormatted ? `Harga: ${priceFormatted}\n` : ''}Rating: ${prod.rating || '4.9'} (${soldFormatted})`,
       hashtags: prod.aiContent?.hashtags || ['#ShopeeHaul', '#RacunShopee', '#RekomendasiShopee', '#ShopeeAffiliate'],
       imageUrl: prod.imageUrl || prod.galleryImages?.[0] || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80',
       affiliateUrl: prod.affiliateUrl || prod.productUrl || 'https://shopee.co.id',

@@ -559,7 +559,7 @@ class AffiliatorKillerApp {
       status: 'Ready',
       aiContent: {
         pinTitle: `${raw.title ? raw.title.substring(0, 60) : 'Rekomendasi Produk'} (Rp ${(raw.discountedPrice || 0).toLocaleString('id-ID')})`,
-        pinDescription: `Detail produk: ${raw.title}\n\n• Harga: Rp ${(raw.discountedPrice || 0).toLocaleString('id-ID')}${commRate ? ` (${commRate})` : ''}\n• Rating: ${raw.rating || '4.9'} (${raw.soldCount || 'Terjual'})\n• Cek promo & toko di link produk.`,
+        pinDescription: `• Harga: Rp ${(raw.discountedPrice || 0).toLocaleString('id-ID')}${commRate ? ` (${commRate})` : ''}\n• Rating: ${raw.rating || '4.9'} (${raw.soldCount || 'Terjual'})\n• Cek promo & toko di link produk.`,
         hashtags: ['#ShopeeHaul', '#RacunShopee', '#RekomendasiShopee', '#ShopeeAffiliate']
       }
     };
