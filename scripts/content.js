@@ -373,60 +373,79 @@
   function extractShopeeAffiliateDashboard(mode = 'viewport') {
     const products = [];
     const seenKeys = new Set();
+    const items = [];
 
-    // 1. Locate all product cards via "Buat Link" action buttons or direct offer containers
-    const actionButtons = Array.from(document.querySelectorAll('button, a, div')).filter(el => {
-      const t = (el.innerText || el.textContent || '').trim();
-      return (t === 'Buat Link' || t === 'Buat link') && el.offsetWidth > 30;
+    // Method 1: Locate directly via all product image elements on page
+    const allImgs = Array.from(document.querySelectorAll('img')).filter(img => {
+      const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
+      if (!src || src.includes('.svg') || src.includes('label_xtra') || src.includes('avatar') || src.includes('static/img/')) return false;
+      const isShopeeHost = src.includes('susercontent.com') || src.includes('cf.shopee.co.id');
+      const w = img.offsetWidth || img.naturalWidth || img.getBoundingClientRect().width || 0;
+      const h = img.offsetHeight || img.naturalHeight || img.getBoundingClientRect().height || 0;
+      return (isShopeeHost || src.startsWith('http')) && (w >= 45 || h >= 45 || img.naturalWidth >= 45);
     });
 
-    const candidateCards = [];
+    allImgs.forEach(img => {
+      let card = img.parentElement;
+      let matchedCard = null;
+      while (card && card !== document.body && card !== document.documentElement) {
+        const text = card.innerText || '';
+        if (text.includes('Rp') && (text.includes('Buat Link') || text.includes('Komisi') || text.includes('KOMISI'))) {
+          matchedCard = card;
+          const p = card.parentElement;
+          const pText = p ? p.innerText || '' : '';
+          const btnCount = (pText.match(/Buat Link/gi) || []).length;
+          if (btnCount > 1) {
+            break;
+          }
+        }
+        card = card.parentElement;
+      }
 
-    if (actionButtons.length > 0) {
+      if (matchedCard) {
+        const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
+        items.push({
+          card: matchedCard,
+          imageUrl: cleanShopeeImageUrl(src)
+        });
+      }
+    });
+
+    // Method 2: Fallback if no images found via Method 1
+    if (items.length === 0) {
+      const actionButtons = Array.from(document.querySelectorAll('button, a, div')).filter(el => {
+        const t = (el.innerText || el.textContent || '').trim();
+        return (t === 'Buat Link' || t === 'Buat link') && el.offsetWidth > 30;
+      });
+
       actionButtons.forEach(btn => {
-        // Walk up DOM tree to find the outermost container that has BOTH the image/thumbnail and the title/price
-        let current = btn.parentElement;
-        let bestCard = null;
-
-        while (current && current !== document.body && current !== document.documentElement) {
-          const text = current.innerText || '';
-          const hasImg = !!current.querySelector('img') || !!current.querySelector('div[style*="background"]');
-          
-          if (hasImg && text.includes('Rp') && current.offsetHeight >= 150 && current.offsetWidth >= 110) {
-            bestCard = current;
-            // Stop if parent is a grid container or wrapper
-            const p = current.parentElement;
-            if (p && (p.children.length >= 3 || p.classList?.contains('grid') || p.style?.display === 'grid' || p.style?.display === 'flex')) {
+        let card = btn.parentElement;
+        let matchedCard = null;
+        while (card && card !== document.body && card !== document.documentElement) {
+          const text = card.innerText || '';
+          if (text.includes('Rp')) {
+            matchedCard = card;
+            const p = card.parentElement;
+            const pText = p ? p.innerText || '' : '';
+            if ((pText.match(/Buat Link/gi) || []).length > 1) {
               break;
             }
           }
-          current = current.parentElement;
+          card = card.parentElement;
         }
 
-        if (bestCard && !candidateCards.includes(bestCard)) {
-          candidateCards.push(bestCard);
+        if (matchedCard) {
+          const imgUrl = extractImageFromCard(matchedCard);
+          items.push({ card: matchedCard, imageUrl: imgUrl });
         }
       });
     }
 
-    // Fallback: If no "Buat Link" buttons found, use general element matching
-    if (candidateCards.length === 0) {
-      const allDivs = Array.from(document.querySelectorAll('div, li, section')).filter(el => {
-        const text = el.innerText || '';
-        const hasAction = text.includes('Buat Link') || text.includes('Komisi');
-        const hasPrice = text.includes('Rp');
-        const hasImg = !!el.querySelector('img') || !!el.querySelector('div[style*="background"]');
-        return hasAction && hasPrice && hasImg && el.offsetWidth > 110 && el.offsetHeight > 150;
-      });
+    // Process all identified product cards
+    items.forEach((item, index) => {
+      const { card, imageUrl } = item;
+      if (mode === 'viewport' && !isElementInViewport(card)) return;
 
-      // Keep OUTERMOST containers (containers not inside another candidate)
-      const outerCards = allDivs.filter(card => !allDivs.some(parent => parent !== card && parent.contains(card)));
-      candidateCards.push(...outerCards);
-    }
-
-    const targetCards = mode === 'viewport' ? candidateCards.filter(c => isElementInViewport(c)) : candidateCards;
-
-    targetCards.forEach((card, index) => {
       try {
         const text = card.innerText || card.textContent || '';
 
@@ -443,8 +462,8 @@
         title = cleanTitleString(title);
         if (!title) return;
 
-        // Extract Real Product Image
-        const imageUrl = extractImageFromCard(card);
+        // Ensure real product image is used
+        let finalImageUrl = imageUrl || extractImageFromCard(card);
 
         // Price
         const prices = extractAllPricesFromText(text);
@@ -511,8 +530,8 @@
           shopName: hasKomisiXtra ? 'Toko Komisi XTRA' : 'Shopee Verified Seller',
           shopLocation: 'Shopee Affiliate Offer',
           shopType: isMall ? 'Mall' : (isStar ? 'Star+' : 'Regular'),
-          imageUrl: imageUrl || '',
-          galleryImages: imageUrl ? [imageUrl] : [],
+          imageUrl: finalImageUrl || '',
+          galleryImages: finalImageUrl ? [finalImageUrl] : [],
           productUrl: cleanUrl,
           isFromAffiliateDashboard: true,
           scrapedAt: new Date().toISOString()
