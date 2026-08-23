@@ -2462,7 +2462,7 @@ class PinMatrixStudio {
       const badgeWrap = document.getElementById('topbar-countdown-wrap');
       if (!timerEl) return;
 
-      if (!this.botStatus || !this.botStatus.isRunning) {
+      if (!this.botStatus || this.botStatus.isRunning === false) {
         timerEl.textContent = 'PAUSED';
         timerEl.style.color = '#ef4444';
         if (badgeWrap) badgeWrap.style.opacity = '0.6';
@@ -2471,18 +2471,25 @@ class PinMatrixStudio {
 
       if (badgeWrap) badgeWrap.style.opacity = '1';
 
-      if (this.botStatus.isProcessing) {
+      if (this.botStatus && this.botStatus.isProcessing) {
         timerEl.textContent = 'POSTING...';
         timerEl.style.color = '#34d399';
         return;
       }
 
-      if (this.botStatus.nextDispatchAt) {
-        const targetMs = new Date(this.botStatus.nextDispatchAt).getTime();
-        const diffSeconds = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
+      // Check QUEUED items from queue or botStatus
+      const queuedItems = (this.queue || []).filter(q => q.status === 'QUEUED');
+      let targetIso = this.botStatus?.nextDispatchAt || null;
+      if (queuedItems.length > 0 && queuedItems[0].scheduledAt) {
+        targetIso = queuedItems[0].scheduledAt;
+      }
+
+      if (targetIso) {
+        const targetMs = new Date(targetIso).getTime();
+        const diffSeconds = Math.floor((targetMs - Date.now()) / 1000);
 
         if (diffSeconds <= 0) {
-          timerEl.textContent = 'READY / 00:00';
+          timerEl.textContent = '⚡ POSTING SEGERA';
           timerEl.style.color = '#34d399';
         } else {
           const mins = Math.floor(diffSeconds / 60);
@@ -2490,8 +2497,11 @@ class PinMatrixStudio {
           timerEl.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
           timerEl.style.color = '#fff';
         }
+      } else if (queuedItems.length === 0) {
+        timerEl.textContent = 'IDLE (Kosong)';
+        timerEl.style.color = 'var(--text-muted)';
       } else {
-        const mins = this.botStatus.intervalMinutes || 35;
+        const mins = this.botStatus?.intervalMinutes || 35;
         timerEl.textContent = `${mins}:00`;
         timerEl.style.color = '#fff';
       }

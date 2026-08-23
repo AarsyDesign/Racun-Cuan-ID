@@ -53,24 +53,27 @@ class BotWorker {
     const intervalMs = intervalMinutes * 60 * 1000;
     const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
     const now = Date.now();
-    const timeElapsed = lastDispatchedAt > 0 ? (now - lastDispatchedAt) : intervalMs;
 
     let nextDispatchSeconds = 0;
     let nextDispatchAt = null;
 
-    const firstQueued = queue.find(q => q.status === 'QUEUED');
+    const queuedItems = queue.filter(q => q.status === 'QUEUED');
+    const firstQueued = queuedItems.length > 0 ? queuedItems[0] : null;
 
     if (config.isRunning) {
-      if (firstQueued && firstQueued.scheduledAt) {
-        nextDispatchAt = firstQueued.scheduledAt;
+      if (firstQueued) {
+        if (firstQueued.scheduledAt) {
+          nextDispatchAt = firstQueued.scheduledAt;
+        } else {
+          nextDispatchAt = (lastDispatchedAt > 0 && (now - lastDispatchedAt) < intervalMs)
+            ? new Date(lastDispatchedAt + intervalMs).toISOString()
+            : new Date().toISOString();
+        }
         const diffMs = new Date(nextDispatchAt).getTime() - now;
         nextDispatchSeconds = Math.max(0, Math.ceil(diffMs / 1000));
-      } else if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
-        nextDispatchSeconds = Math.max(0, Math.ceil((intervalMs - timeElapsed) / 1000));
-        nextDispatchAt = new Date(lastDispatchedAt + intervalMs).toISOString();
       } else {
         nextDispatchSeconds = 0;
-        nextDispatchAt = new Date().toISOString();
+        nextDispatchAt = null;
       }
     }
 
@@ -88,7 +91,7 @@ class BotWorker {
       dailyCountToday: config.dailyCountToday || 0,
       queueCount: queue.length,
       pendingApprovalCount: queue.filter(q => q.status === 'PENDING_APPROVAL').length,
-      readyToPublishCount: queue.filter(q => q.status === 'QUEUED').length,
+      readyToPublishCount: queuedItems.length,
       activeCampaignsCount: activeCampaigns.length,
       totalCampaignsCount: campaigns.length,
       lastTickAt: new Date().toISOString()
@@ -110,21 +113,22 @@ class BotWorker {
       const readyItem = queue.find(q => q.status === 'QUEUED');
 
       if (readyItem) {
-        const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
-        const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
         const now = Date.now();
-        const timeElapsed = now - lastDispatchedAt;
 
-        // Check if cooldown interval has elapsed
-        if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
-          this.isProcessing = false;
-          return;
-        }
-
-        // If scheduledAt exists, check if it is due (with 3s grace)
+        // If scheduledAt exists, check if due
         if (readyItem.scheduledAt) {
           const schedTime = new Date(readyItem.scheduledAt).getTime();
-          if (now < schedTime - 3000) {
+          if (now < schedTime - 2000) {
+            // Still waiting for this item's scheduled timestamp
+            this.isProcessing = false;
+            return;
+          }
+        } else {
+          // If no scheduledAt, check cooldown interval
+          const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
+          const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
+          const timeElapsed = now - lastDispatchedAt;
+          if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
             this.isProcessing = false;
             return;
           }
@@ -136,6 +140,10 @@ class BotWorker {
           lastDispatchedAt: new Date().toISOString(),
           dailyCountToday: (config.dailyCountToday || 0) + 1
         });
+
+        // Recalculate subsequent queue items schedules (+35m each)
+        queueService.recalculateSchedules();
+
         this.isProcessing = false;
         return;
       }
