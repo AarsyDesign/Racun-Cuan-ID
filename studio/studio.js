@@ -1009,7 +1009,7 @@ class PinMatrixStudio {
     const approvalMode = document.getElementById('camp-approval-mode')?.value;
     const windowStart = document.getElementById('camp-window-start')?.value || '00:00';
     const windowEnd = document.getElementById('camp-window-end')?.value || '23:59';
-    const affiliateSubId = document.getElementById('camp-subid')?.value || 'pinlume_auto';
+    const affiliateSubId = document.getElementById('camp-subid')?.value || 'racuncuan_auto';
 
     if (!name || !subjects) {
       this.showToast('⚠️ Nama Campaign dan Subjects wajib diisi!', 'warning');
