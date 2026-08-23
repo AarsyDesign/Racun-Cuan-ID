@@ -651,59 +651,100 @@ class PinMatrixStudio {
         <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px dashed var(--border-subtle);">
           <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
           <h3 style="color: #fff; font-size: 16px;">Antrean Kosong</h3>
-          <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Pilih campaign di Campaign Studio lalu klik "Enqueue Selected Campaigns" untuk membuat antrean konten baru.</p>
+          <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Pilih campaign di Campaign Studio atau produk Shopee lalu klik "Acc Queue" untuk membuat antrean konten baru.</p>
         </div>
       `;
       return;
     }
+
+    // Determine interval and base time for queuing calculation
+    const intervalMins = this.botStatus.intervalMinutes || 35;
+    const intervalMs = intervalMins * 60 * 1000;
+    
+    let baseTimeMs = Date.now();
+    if (this.botStatus.nextDispatchAt) {
+      const nextMs = new Date(this.botStatus.nextDispatchAt).getTime();
+      baseTimeMs = nextMs > Date.now() ? nextMs : Date.now();
+    }
+
+    let queuedIndex = 0;
 
     container.innerHTML = this.queue.map(item => {
       const isPending = item.status === 'PENDING_APPROVAL';
       const isQueued = item.status === 'QUEUED';
       const tags = (item.hashtags || []).map(t => `<span style="font-size: 10px; color: var(--accent-orange);">${t}</span>`).join(' ');
 
+      let scheduleHtml = '';
+      if (isQueued) {
+        const itemScheduleMs = baseTimeMs + (queuedIndex * intervalMs);
+        const scheduleDate = new Date(itemScheduleMs);
+        const timeStr = scheduleDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+        
+        const diffMins = Math.max(0, Math.round((itemScheduleMs - Date.now()) / 60000));
+        let relativeText = diffMins <= 1 ? '⚡ Segera' : `⏱️ ±${diffMins} mnt lagi`;
+
+        scheduleHtml = `
+          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 6px 10px; margin: 6px 0 2px; font-size: 11px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #34d399; font-weight: 700; display: flex; align-items: center; gap: 4px;">
+              <span>📅 Jadwal:</span> <strong>${timeStr}</strong>
+            </span>
+            <span style="color: #a7f3d0; font-size: 10.5px; background: rgba(16, 185, 129, 0.18); padding: 1px 6px; border-radius: 4px; font-weight: 600;">
+              ${relativeText}
+            </span>
+          </div>
+        `;
+        queuedIndex++;
+      } else {
+        scheduleHtml = `
+          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 6px; padding: 6px 10px; margin: 6px 0 2px; font-size: 11px; display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #fbbf24; font-weight: 600;">⏳ Belum di-Acc</span>
+            <span style="color: var(--text-muted); font-size: 10px;">Klik Approve utk antrikan</span>
+          </div>
+        `;
+      }
+
       return `
         <div class="queue-card" data-id="${item.id}">
           <div class="queue-card-image-wrap">
-            <img src="${item.imageUrl || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'}" alt="${item.title}" class="queue-card-image" onerror="this.src='https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'">
+            <img src="${item.imageUrl || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'}" alt="${this.escapeHtml(item.title)}" class="queue-card-image" onerror="this.src='https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'">
             <div class="queue-card-status-badge">
-              <span class="badge-status ${isPending ? 'paused' : 'active'}">
-                ${item.status}
+              <span class="badge-status ${isPending ? 'paused' : 'active'}" style="font-size: 9.5px; padding: 2px 6px;">
+                ${isQueued ? '🟢 QUEUED' : '🟡 PENDING'}
               </span>
+            </div>
+            <div style="position: absolute; bottom: 6px; left: 8px; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); padding: 2px 6px; border-radius: 4px; font-size: 10px; color: var(--accent-orange); font-weight: 700;">
+              📌 ${this.escapeHtml(item.targetBoard || 'General')}
             </div>
           </div>
           <div class="queue-card-body">
-            <div style="font-size: 11px; color: var(--accent-orange); font-weight: 600; text-transform: uppercase;">
-              📌 ${item.targetBoard || 'General'}
-            </div>
-            <h4 class="queue-card-title">${item.title}</h4>
-            <p class="queue-card-desc">${item.description}</p>
-            <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
-              ${tags}
-            </div>
+            <h4 class="queue-card-title" title="${this.escapeHtml(item.title)}">${this.escapeHtml(item.title)}</h4>
+            <p class="queue-card-desc">${this.escapeHtml(item.description || '')}</p>
+            
+            ${scheduleHtml}
+
             <div class="queue-card-meta">
-              <span>🎯 ${item.campaignName || 'Campaign Studio'}</span>
-              <a href="${item.affiliateUrl || '#'}" target="_blank" style="color: #60a5fa; text-decoration: none;">🔗 Link Aff</a>
+              <span style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🎯 ${this.escapeHtml(item.campaignName || 'Campaign Studio')}</span>
+              <a href="${item.affiliateUrl || '#'}" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: 600;">🔗 Link Aff ↗</a>
             </div>
           </div>
           <div class="queue-card-actions">
             ${isPending ? `
-              <button class="btn-primary" style="padding: 7px 12px; font-size: 12px;" data-action="approve-queue" data-id="${item.id}">
+              <button class="btn-primary" style="padding: 6px 12px; font-size: 11.5px; background: #10b981;" data-action="approve-queue" data-id="${item.id}">
                 ✓ Approve
               </button>
             ` : `
-              <button class="btn-primary" style="padding: 7px 9px; font-size: 11px; background: linear-gradient(135deg, #e60023, #b91c1c);" data-action="dispatch-queue" data-id="${item.id}" title="Publish ke Pinterest">
+              <button class="btn-primary" style="padding: 6px 8px; font-size: 11px; background: linear-gradient(135deg, #e60023, #b91c1c);" data-action="dispatch-queue" data-id="${item.id}" title="Publish sekarang ke Pinterest">
                 📌 Pin
               </button>
-              <button class="btn-primary" style="padding: 7px 9px; font-size: 11px; background: #24a1de;" data-action="dispatch-telegram" data-id="${item.id}" title="Broadcast ke Telegram Channel">
+              <button class="btn-primary" style="padding: 6px 8px; font-size: 11px; background: #24a1de;" data-action="dispatch-telegram" data-id="${item.id}" title="Broadcast sekarang ke Telegram Channel">
                 📢 TG
               </button>
-              <button class="btn-secondary" style="padding: 7px 9px; font-size: 11px; border-color: rgba(255,255,255,0.25);" data-action="dispatch-all" data-id="${item.id}" title="Publish ke Pinterest & Telegram Sekaligus">
+              <button class="btn-secondary" style="padding: 6px 8px; font-size: 11px; border-color: rgba(255,255,255,0.25);" data-action="dispatch-all" data-id="${item.id}" title="Publish ke Pinterest & Telegram Sekaligus">
                 🚀 All
               </button>
             `}
-            <button class="btn-secondary" style="padding: 7px 8px; font-size: 12px;" data-action="remove-queue" data-id="${item.id}" title="Hapus dari antrean">
-              ✕
+            <button class="btn-secondary" style="padding: 6px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" data-action="remove-queue" data-id="${item.id}" title="Hapus dari antrean">
+              🗑️
             </button>
           </div>
         </div>
