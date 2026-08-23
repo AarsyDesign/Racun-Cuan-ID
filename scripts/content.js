@@ -627,15 +627,27 @@
   function extractImageFromCard(card) {
     if (!card) return '';
 
-    const imgs = Array.from(card.querySelectorAll('img'));
-    for (const img of imgs) {
+    // 1. Check all <img> tags in the card
+    const allImgs = Array.from(card.querySelectorAll('img'));
+    const validImgs = allImgs.filter(img => {
       const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
-      if (isValidShopeeProductImage(src) && !src.includes('avatar') && !src.includes('icon')) {
-        return cleanShopeeImageUrl(src);
-      }
+      return isValidShopeeProductImage(src);
+    });
+
+    if (validImgs.length > 0) {
+      // Sort by display size (largest image first) to avoid tiny badge icons
+      validImgs.sort((a, b) => {
+        const areaA = (a.offsetWidth || a.naturalWidth || 1) * (a.offsetHeight || a.naturalHeight || 1);
+        const areaB = (b.offsetWidth || b.naturalWidth || 1) * (b.offsetHeight || b.naturalHeight || 1);
+        return areaB - areaA;
+      });
+      const chosen = validImgs[0];
+      const src = chosen.currentSrc || chosen.src || chosen.getAttribute('src') || chosen.getAttribute('data-src') || chosen.getAttribute('data-lazy-src') || '';
+      if (src) return cleanShopeeImageUrl(src);
     }
 
-    const bgEls = Array.from(card.querySelectorAll('div[style*="background"], span[style*="background"]'));
+    // 2. Check CSS background-images in the card
+    const bgEls = Array.from(card.querySelectorAll('div[style*="background"], span[style*="background"], a[style*="background"]'));
     if (card.getAttribute('style')?.includes('background')) bgEls.unshift(card);
     for (const el of bgEls) {
       const style = el.getAttribute('style') || '';
@@ -645,12 +657,31 @@
       }
     }
 
+    // 3. Fallback: Check standard Shopee file storage URLs in any attribute
+    for (const img of allImgs) {
+      const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
+      if (src && (src.includes('susercontent.com/file/') || src.includes('cf.shopee.co.id/file/'))) {
+        const lower = src.toLowerCase();
+        if (!lower.includes('badge') && !lower.includes('icon') && !lower.includes('komisi')) {
+          return cleanShopeeImageUrl(src);
+        }
+      }
+    }
+
     return '';
   }
 
   function isValidShopeeProductImage(url) {
     if (!url || typeof url !== 'string') return false;
-    if (url.startsWith('data:image/svg') || url.includes('base64,R0lGOD') || url.includes('empty.png')) return false;
+    if (url.startsWith('data:image/svg') || url.includes('base64,R0lGOD') || url.includes('empty.png') || url.endsWith('.svg')) return false;
+
+    const lower = url.toLowerCase();
+    // Exclude badges, icons, avatars, and overlays
+    const blacklist = ['badge', 'komisi', 'xtra', 'icon', 'avatar', 'logo', 'star', 'mall', 'ribbon', 'banner', 'label', 'tier', 'grade', 'rating'];
+    for (const term of blacklist) {
+      if (lower.includes(term)) return false;
+    }
+
     // Must be valid Shopee image URL
     return url.includes('susercontent.com') || url.includes('shopee') || url.includes('cf.') || url.startsWith('http');
   }
@@ -660,10 +691,10 @@
     let clean = url.trim();
     if (clean.startsWith('//')) clean = `https:${clean}`;
 
-    // Remove downscale thumbnail suffixes while preserving file extensions
-    clean = clean.replace(/_tn(?=[@\?\.]|$)/i, '');
-    clean = clean.replace(/_xxhdpi(?=[@\?\.]|$)/i, '');
-    clean = clean.replace(/@resize_w[0-9]+_nl/i, '');
+    // Remove downscale thumbnail suffixes while preserving file hash
+    clean = clean.replace(/_tn(?=[@\?\.]|$)/gi, '');
+    clean = clean.replace(/_xxhdpi(?=[@\?\.]|$)/gi, '');
+    clean = clean.replace(/@resize_w[0-9]+_nl/gi, '');
     return clean;
   }
 

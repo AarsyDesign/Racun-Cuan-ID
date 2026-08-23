@@ -1064,28 +1064,44 @@ body {
   color: #34D399;
 }
 
-/* Shopee Product Card */
+/* Shopee Products Grid */
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 12px;
+}
+
+/* Shopee Product Card (Horizontal Compact Density) */
 .shopee-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: 10px;
   overflow: hidden;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 10px;
+  gap: 12px;
+  min-height: 105px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shopee-card:hover {
   border-color: rgba(16, 185, 129, 0.4);
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .shopee-card-img-wrap {
-  height: 200px;
-  width: 100%;
+  width: 90px;
+  min-width: 90px;
+  height: 90px;
+  border-radius: 8px;
   position: relative;
   background: #0f172a;
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: center;
 }
 
 .shopee-card-img {
@@ -1096,57 +1112,58 @@ body {
 
 .shopee-badge-top-left {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 4px;
+  left: 4px;
   display: flex;
-  gap: 4px;
+  gap: 3px;
 }
 
 .badge-tag-mall {
   background: #EE4D2D;
   color: #fff;
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 800;
-  padding: 2px 6px;
+  padding: 1px 4px;
   border-radius: 3px;
 }
 
 .badge-tag-star {
   background: #f97316;
   color: #fff;
-  font-size: 9.5px;
+  font-size: 8.5px;
   font-weight: 800;
-  padding: 2px 6px;
+  padding: 1px 4px;
   border-radius: 3px;
 }
 
 .badge-tag-komisi {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  bottom: 4px;
+  right: 4px;
   background: linear-gradient(135deg, #10B981, #059669);
   color: #fff;
-  font-size: 10.5px;
+  font-size: 9px;
   font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 4px;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+  padding: 2px 5px;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
 }
 
 .shopee-card-body {
-  padding: 14px;
+  padding: 0;
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
 .shopee-card-title {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   color: #fff;
-  line-height: 1.35;
-  margin-bottom: 8px;
+  line-height: 1.3;
+  margin-bottom: 4px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1155,63 +1172,63 @@ body {
 
 .shopee-price-row {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
 }
 
 .shopee-price-current {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 800;
   color: #10B981;
   font-family: var(--font-mono);
 }
 
 .shopee-price-orig {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
   text-decoration: line-through;
 }
 
 .shopee-comm-est {
-  font-size: 11px;
+  font-size: 10px;
   color: #34D399;
   font-weight: 700;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.12);
+  padding: 1px 5px;
+  border-radius: 3px;
   display: inline-block;
-  margin-bottom: 10px;
 }
 
 .shopee-meta-row {
   display: flex;
   justify-content: space-between;
-  font-size: 10.5px;
+  font-size: 9.5px;
   color: var(--text-muted);
-  margin-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  padding-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .shopee-card-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .btn-card-action {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
   border: none;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   transition: all 0.15s;
+  height: 25px;
 }
 
 .btn-card-matrix {
@@ -1246,6 +1263,11 @@ body {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.2);
   color: #f87171;
+  padding: 4px 6px;
+}
+
+.btn-card-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .btn-card-delete:hover {
