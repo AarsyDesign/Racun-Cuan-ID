@@ -714,44 +714,45 @@ class PinMatrixStudio {
           <div class="queue-card-image-wrap">
             <img src="${item.imageUrl || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'}" alt="${this.escapeHtml(item.title)}" class="queue-card-image" onerror="this.src='https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'">
             <div class="queue-card-status-badge">
-              <span class="badge-status ${isPending ? 'paused' : 'active'}" style="font-size: 9.5px; padding: 2px 6px;">
-                ${isQueued ? '🟢 QUEUED' : '🟡 PENDING'}
+              <span class="badge-status ${isPending ? 'paused' : 'active'}" style="font-size: 8.5px; padding: 1px 5px;">
+                ${isQueued ? 'QUEUED' : 'PENDING'}
               </span>
             </div>
-            <div style="position: absolute; bottom: 6px; left: 8px; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); padding: 2px 6px; border-radius: 4px; font-size: 10px; color: var(--accent-orange); font-weight: 700;">
+            <div style="position: absolute; bottom: 3px; left: 4px; right: 4px; background: rgba(0,0,0,0.8); backdrop-filter: blur(2px); padding: 1px 4px; border-radius: 3px; font-size: 8.5px; color: var(--accent-orange); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               📌 ${this.escapeHtml(item.targetBoard || 'General')}
             </div>
           </div>
           <div class="queue-card-body">
-            <h4 class="queue-card-title" title="${this.escapeHtml(item.title)}">${this.escapeHtml(item.title)}</h4>
-            <p class="queue-card-desc">${this.escapeHtml(item.description || '')}</p>
+            <div>
+              <h4 class="queue-card-title" title="${this.escapeHtml(item.title)}">${this.escapeHtml(item.title)}</h4>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); margin-bottom: 2px;">
+                <span style="max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🎯 ${this.escapeHtml(item.campaignName || 'Shopee')}</span>
+                <a href="${item.affiliateUrl || '#'}" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: 600;">🔗 Link Aff ↗</a>
+              </div>
+            </div>
             
             ${scheduleHtml}
 
-            <div class="queue-card-meta">
-              <span style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">🎯 ${this.escapeHtml(item.campaignName || 'Campaign Studio')}</span>
-              <a href="${item.affiliateUrl || '#'}" target="_blank" style="color: #60a5fa; text-decoration: none; font-weight: 600;">🔗 Link Aff ↗</a>
+            <div class="queue-card-actions">
+              ${isPending ? `
+                <button class="btn-primary" style="padding: 4px 10px; font-size: 10.5px; background: #10b981; border-radius: 4px; width: auto;" data-action="approve-queue" data-id="${item.id}">
+                  ✓ Approve
+                </button>
+              ` : `
+                <button class="btn-primary" style="padding: 4px 8px; font-size: 10px; background: linear-gradient(135deg, #e60023, #b91c1c); border-radius: 4px; width: auto;" data-action="dispatch-queue" data-id="${item.id}" title="Publish sekarang ke Pinterest">
+                  📌 Pin
+                </button>
+                <button class="btn-primary" style="padding: 4px 8px; font-size: 10px; background: #24a1de; border-radius: 4px; width: auto;" data-action="dispatch-telegram" data-id="${item.id}" title="Broadcast sekarang ke Telegram Channel">
+                  📢 TG
+                </button>
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 10px; border-color: rgba(255,255,255,0.25); border-radius: 4px; width: auto;" data-action="dispatch-all" data-id="${item.id}" title="Publish ke Pinterest & Telegram Sekaligus">
+                  🚀 All
+                </button>
+              `}
+              <button class="btn-secondary" style="padding: 4px 6px; font-size: 10px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3); border-radius: 4px; width: auto;" data-action="remove-queue" data-id="${item.id}" title="Hapus dari antrean">
+                🗑️
+              </button>
             </div>
-          </div>
-          <div class="queue-card-actions">
-            ${isPending ? `
-              <button class="btn-primary" style="padding: 6px 12px; font-size: 11.5px; background: #10b981;" data-action="approve-queue" data-id="${item.id}">
-                ✓ Approve
-              </button>
-            ` : `
-              <button class="btn-primary" style="padding: 6px 8px; font-size: 11px; background: linear-gradient(135deg, #e60023, #b91c1c);" data-action="dispatch-queue" data-id="${item.id}" title="Publish sekarang ke Pinterest">
-                📌 Pin
-              </button>
-              <button class="btn-primary" style="padding: 6px 8px; font-size: 11px; background: #24a1de;" data-action="dispatch-telegram" data-id="${item.id}" title="Broadcast sekarang ke Telegram Channel">
-                📢 TG
-              </button>
-              <button class="btn-secondary" style="padding: 6px 8px; font-size: 11px; border-color: rgba(255,255,255,0.25);" data-action="dispatch-all" data-id="${item.id}" title="Publish ke Pinterest & Telegram Sekaligus">
-                🚀 All
-              </button>
-            `}
-            <button class="btn-secondary" style="padding: 6px 8px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);" data-action="remove-queue" data-id="${item.id}" title="Hapus dari antrean">
-              🗑️
-            </button>
           </div>
         </div>
       `;
