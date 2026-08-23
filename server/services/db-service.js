@@ -29,7 +29,7 @@ const INITIAL_DATA = {
   ],
   botConfig: {
     isRunning: true,
-    intervalMinutes: 5,
+    intervalMinutes: 35,
     antiBanMinDelaySeconds: 180, // 3 minutes
     antiBanMaxDelaySeconds: 480, // 8 minutes
     dailyCap: 50,
@@ -80,6 +80,10 @@ function readDb() {
       data.botConfig = { ...INITIAL_DATA.botConfig };
     } else {
       data.botConfig = { ...INITIAL_DATA.botConfig, ...data.botConfig };
+    }
+    // Enforce 35 minutes interval default
+    if (!data.botConfig.intervalMinutes || data.botConfig.intervalMinutes < 10) {
+      data.botConfig.intervalMinutes = 35;
     }
     if (!data.connections) {
       data.connections = { ...INITIAL_DATA.connections };

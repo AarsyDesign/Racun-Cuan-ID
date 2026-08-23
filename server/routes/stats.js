@@ -26,7 +26,7 @@ router.get('/', (req, res) => {
       activeCampaignsCount: activeCampaigns.length,
       totalCampaignsCount: campaigns.length,
       botRunning: !!botConfig.isRunning,
-      botIntervalMinutes: botConfig.intervalMinutes || 4,
+      botIntervalMinutes: botConfig.intervalMinutes || 35,
       systemHealth: 'OPERATIONAL'
     };
 

@@ -14,7 +14,7 @@
   ],
   "botConfig": {
     "isRunning": true,
-    "intervalMinutes": 5,
+    "intervalMinutes": 35,
     "antiBanMinDelaySeconds": 180,
     "antiBanMaxDelaySeconds": 480,
     "dailyCap": 50,
