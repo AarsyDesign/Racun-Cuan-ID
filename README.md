@@ -160,7 +160,7 @@ Buat file `.env` di dalam folder `server/` (opsional jika ingin menggunakan env 
 ```env
 PORT=3000
 NODE_ENV=production
-TELEGRAM_BOT_TOKEN=8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k
+TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
 TELEGRAM_CHANNEL_ID=@namachannelanda
 PINTEREST_ACCESS_TOKEN=pina_...
 GEMINI_API_KEY=AIzaSy...

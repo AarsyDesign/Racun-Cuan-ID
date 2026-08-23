@@ -1482,8 +1482,14 @@ Format Output WAJIB dalam JSON valid:
     }
 
     // Direct Telegram API fallback if backend is offline
-    const token = this.settings.telegramBotToken || '8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k';
+    const token = this.settings.telegramBotToken;
     const chatId = this.settings.telegramChannelId;
+
+    if (!token) {
+      this.showToast('Isi Telegram Bot Token di menu Pengaturan terlebih dahulu', 'error');
+      this.switchTab('settings');
+      return;
+    }
 
     if (!chatId) {
       this.showToast('Isi Target Channel ID di menu Pengaturan terlebih dahulu', 'error');
@@ -1743,7 +1749,7 @@ Format Output WAJIB dalam JSON valid:
     this.settingCustomPrompt.value = this.settings.customPromptTemplate || '';
 
     this.settingSheetsWebhookUrl.value = this.settings.sheetsWebhookUrl || '';
-    if (this.settingTelegramBotToken) this.settingTelegramBotToken.value = this.settings.telegramBotToken || '8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k';
+    if (this.settingTelegramBotToken) this.settingTelegramBotToken.value = this.settings.telegramBotToken || '';
     if (this.settingTelegramChannelId) this.settingTelegramChannelId.value = this.settings.telegramChannelId || '';
     this.settingN8nWebhookUrl.value = this.settings.n8nWebhookUrl || '';
     this.settingN8nAuthToken.value = this.settings.n8nAuthToken || '';

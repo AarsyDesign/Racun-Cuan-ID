@@ -12,7 +12,7 @@ const dbService = require('./db-service');
 
 class TelegramPublisher {
   constructor() {
-    this.defaultToken = process.env.TELEGRAM_BOT_TOKEN || '8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k';
+    this.defaultToken = process.env.TELEGRAM_BOT_TOKEN || '';
   }
 
   getApiBaseUrl(token = null) {

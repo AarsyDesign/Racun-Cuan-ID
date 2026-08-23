@@ -18,11 +18,10 @@ router.get('/status', async (req, res) => {
 
     res.json({
       success: true,
-      bot: botInfo || {
-        id: 8277933275,
-        username: conn.telegramBotUsername || 'linkaffiliatorbot',
-        first_name: conn.telegramBotName || 'Link Affiliate'
-      },
+      bot: botInfo || (conn.telegramBotUsername ? {
+        username: conn.telegramBotUsername,
+        first_name: conn.telegramBotName || 'Telegram Bot'
+      } : null),
       configuredChannelId: conn.telegramChannelId || '',
       autoPostEnabled: !!conn.telegramAutoPost,
       isConnected: !botError && !!botInfo,
