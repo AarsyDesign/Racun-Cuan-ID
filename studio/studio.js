@@ -1,5 +1,5 @@
 /**
- * PinMatrix Studio - Interactive Frontend Controller
+ * RacunCuan.id Studio - Interactive Frontend Controller
  */
 
 class PinMatrixStudio {
@@ -36,10 +36,34 @@ class PinMatrixStudio {
   async init() {
     this.bindEvents();
     this.setupPromptHelpers();
+    await this.loadConfiguredBackendUrl();
     this.initBackendSettingsUI();
     this.startLiveCountdown();
     await this.fetchAllData();
     this.startLivePolling();
+  }
+
+  async loadConfiguredBackendUrl() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        const stored = await chrome.storage.local.get(['pinmatrix_backend_url', 'affiliator_settings']);
+        const url = stored?.pinmatrix_backend_url || stored?.affiliator_settings?.backendUrl;
+        if (url && url.trim().startsWith('http')) {
+          const clean = url.trim().replace(/\/+$/, '');
+          this.apiBase = clean.endsWith('/api') ? clean : `${clean}/api`;
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('pinmatrix_backend_url', clean);
+          }
+          return;
+        }
+      }
+    } catch (e) {}
+
+    const storedBackend = (typeof localStorage !== 'undefined') ? localStorage.getItem('pinmatrix_backend_url') : null;
+    if (storedBackend && storedBackend.trim().startsWith('http')) {
+      const clean = storedBackend.trim().replace(/\/+$/, '');
+      this.apiBase = clean.endsWith('/api') ? clean : `${clean}/api`;
+    }
   }
 
   initBackendSettingsUI() {
@@ -1762,25 +1786,43 @@ class PinMatrixStudio {
 
   async fetchProducts(showToast = false) {
     try {
-      const res = await fetch(`${this.apiBase}/products`);
+      const res = await fetch(`${this.apiBase}/products`, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       this.products = data.data || [];
 
-      // Update badge
-      const badge = document.getElementById('products-nav-badge');
-      if (badge) badge.textContent = this.products.length;
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        chrome.storage.local.set({ affiliator_scraped_products: this.products }).catch(() => {});
+      }
 
-      const countAll = document.getElementById('count-filter-all');
-      if (countAll) countAll.textContent = this.products.length;
-
+      this.updateProductsBadgeAndFilterCounts();
       this.renderProducts();
 
       if (showToast) {
         this.showToast(`✅ ${this.products.length} produk Shopee termuat.`, 'success');
       }
     } catch (err) {
-      console.warn('[Shopee] Fetch products error:', err);
+      console.warn('[Shopee] Fetch products from server warning (offline/loading):', err.message);
+      // Fallback: load local products from extension storage
+      if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+        try {
+          const localData = await chrome.storage.local.get(['affiliator_scraped_products']);
+          if (localData?.affiliator_scraped_products && Array.isArray(localData.affiliator_scraped_products)) {
+            this.products = localData.affiliator_scraped_products;
+          }
+        } catch (storageErr) {}
+      }
+      this.updateProductsBadgeAndFilterCounts();
+      this.renderProducts();
     }
+  }
+
+  updateProductsBadgeAndFilterCounts() {
+    const badge = document.getElementById('products-nav-badge');
+    if (badge) badge.textContent = this.products.length;
+
+    const countAll = document.getElementById('count-filter-all');
+    if (countAll) countAll.textContent = this.products.length;
   }
 
   renderProducts() {
@@ -2675,6 +2717,12 @@ class PinMatrixStudio {
         }
         const clean = rawUrl.replace(/\/+$/, '');
         localStorage.setItem('pinmatrix_backend_url', clean);
+        if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+          chrome.storage.local.set({ 
+            pinmatrix_backend_url: clean,
+            affiliator_settings: { backendUrl: clean }
+          }).catch(() => {});
+        }
         this.apiBase = clean.endsWith('/api') ? clean : `${clean}/api`;
         if (status) {
           status.textContent = clean.includes('localhost') ? '● Localhost / Auto' : '● Cloud / Hosted';
@@ -2683,6 +2731,9 @@ class PinMatrixStudio {
         await this.fetchAllData();
       } else {
         localStorage.removeItem('pinmatrix_backend_url');
+        if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+          chrome.storage.local.remove(['pinmatrix_backend_url']).catch(() => {});
+        }
         this.apiBase = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
           ? `${window.location.origin}/api`
           : 'http://localhost:3000/api';
