@@ -634,15 +634,19 @@ class PinMatrixStudio {
 
     container.innerHTML = this.queue.map(item => {
       const isPending = item.status === 'PENDING_APPROVAL';
+      const isFailed = item.status === 'FAILED';
       const isQueued = item.status === 'QUEUED';
       const tags = (item.hashtags || []).map(t => `<span style="font-size: 10px; color: var(--accent-orange);">${t}</span>`).join(' ');
 
+      const statusBadgeClass = isFailed ? 'paused' : (isPending ? 'paused' : 'active');
+      const statusBadgeStyle = isFailed ? 'background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);' : '';
+
       return `
-        <div class="queue-card" data-id="${item.id}">
+        <div class="queue-card ${isFailed ? 'queue-card-failed' : ''}" data-id="${item.id}">
           <div class="queue-card-image-wrap">
             <img src="${item.imageUrl || 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'}" alt="${item.title}" class="queue-card-image" onerror="this.src='https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800'">
             <div class="queue-card-status-badge">
-              <span class="badge-status ${isPending ? 'paused' : 'active'}">
+              <span class="badge-status ${statusBadgeClass}" style="${statusBadgeStyle}">
                 ${item.status}
               </span>
             </div>
@@ -656,7 +660,14 @@ class PinMatrixStudio {
             <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
               ${tags}
             </div>
-            <div class="queue-card-meta">
+
+            ${isFailed && item.error ? `
+              <div style="margin-top: 8px; font-size: 11px; color: #fca5a5; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 6px 8px;">
+                ⚠️ <strong>Gagal:</strong> ${this.escapeHtml(item.error)}
+              </div>
+            ` : ''}
+
+            <div class="queue-card-meta" style="margin-top: 8px;">
               <span>🎯 ${item.campaignName || 'Campaign Studio'}</span>
               <a href="${item.affiliateUrl || '#'}" target="_blank" style="color: #60a5fa; text-decoration: none;">🔗 Link Aff</a>
             </div>
