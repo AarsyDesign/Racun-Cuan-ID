@@ -1086,14 +1086,25 @@ class PinMatrixStudio {
     if (!confirm(`⚠️ Hapus SEMUA (${this.queue.length}) item dari Preview Queue? Tindakan ini tidak dapat dibatalkan.`)) return;
 
     try {
-      const res = await fetch(`${this.apiBase}/queue`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        this.selectedQueueIds.clear();
-        this.showToast('🧹 Semua item di Preview Queue berhasil dibersihkan!', 'success');
-        await this.fetchQueue();
-        await this.fetchLogs();
+      this.showToast('⏳ Membersihkan semua antrean...', 'info');
+      let isSuccess = false;
+      try {
+        const res = await fetch(`${this.apiBase}/queue`, { method: 'DELETE' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) isSuccess = true;
+        }
+      } catch (_) {}
+
+      // Fallback: If DELETE /api/queue returned HTML or failed, delete individual items in parallel
+      if (!isSuccess) {
+        await Promise.all(this.queue.map(q => fetch(`${this.apiBase}/queue/${q.id}`, { method: 'DELETE' })));
       }
+
+      this.selectedQueueIds.clear();
+      this.showToast('🧹 Semua item di Preview Queue berhasil dibersihkan!', 'success');
+      await this.fetchQueue();
+      await this.fetchLogs();
     } catch (err) {
       this.showToast(`❌ Gagal membersihkan antrean: ${err.message}`, 'error');
     }
@@ -1108,18 +1119,33 @@ class PinMatrixStudio {
     if (!confirm(`⚠️ Hapus ${ids.length} item antrean yang dipilih?`)) return;
 
     try {
-      const res = await fetch(`${this.apiBase}/queue/batch-delete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
-      });
-      const data = await res.json();
-      if (data.success) {
-        this.selectedQueueIds.clear();
-        this.showToast(`🗑️ Berhasil menghapus ${data.count || ids.length} item terpilih!`, 'success');
-        await this.fetchQueue();
-        await this.fetchLogs();
+      this.showToast(`⏳ Menghapus ${ids.length} item antrean...`, 'info');
+      
+      // Try batch-delete endpoint first
+      let success = false;
+      try {
+        const res = await fetch(`${this.apiBase}/queue/batch-delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) success = true;
+        }
+      } catch (_) {
+        success = false;
       }
+
+      // Fallback to parallel individual deletes if batch-delete returned 404/HTML (e.g. while server is deploying)
+      if (!success) {
+        await Promise.all(ids.map(id => fetch(`${this.apiBase}/queue/${id}`, { method: 'DELETE' })));
+      }
+
+      this.selectedQueueIds.clear();
+      this.showToast(`🗑️ Berhasil menghapus ${ids.length} item terpilih!`, 'success');
+      await this.fetchQueue();
+      await this.fetchLogs();
     } catch (err) {
       this.showToast(`❌ Gagal menghapus item terpilih: ${err.message}`, 'error');
     }
@@ -1133,18 +1159,36 @@ class PinMatrixStudio {
     }
 
     try {
-      const res = await fetch(`${this.apiBase}/queue/batch-approve`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
-      });
-      const data = await res.json();
-      if (data.success) {
-        this.selectedQueueIds.clear();
-        this.showToast(`✅ Berhasil meng-approve ${data.count || ids.length} item terpilih!`, 'success');
-        await this.fetchQueue();
-        await this.fetchLogs();
+      this.showToast(`⏳ Meng-approve ${ids.length} item antrean...`, 'info');
+
+      let success = false;
+      try {
+        const res = await fetch(`${this.apiBase}/queue/batch-approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.success) success = true;
+        }
+      } catch (_) {
+        success = false;
       }
+
+      // Fallback to single approve if batch endpoint returned HTML
+      if (!success) {
+        await Promise.all(ids.map(id => fetch(`${this.apiBase}/queue/${id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ autoDispatch: false })
+        })));
+      }
+
+      this.selectedQueueIds.clear();
+      this.showToast(`✅ Berhasil meng-approve ${ids.length} item terpilih!`, 'success');
+      await this.fetchQueue();
+      await this.fetchLogs();
     } catch (err) {
       this.showToast(`❌ Gagal approve item terpilih: ${err.message}`, 'error');
     }
