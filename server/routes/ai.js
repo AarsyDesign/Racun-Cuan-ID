@@ -66,4 +66,33 @@ router.post('/batch-generate', async (req, res) => {
   }
 });
 
+// POST /api/ai/generate-campaign-prompts
+router.post('/generate-campaign-prompts', async (req, res) => {
+  try {
+    const { campaignName, provider, config } = req.body;
+    if (!campaignName) {
+      return res.status(400).json({ error: 'campaignName is required' });
+    }
+
+    const aiConfig = config || {
+      geminiApiKey: process.env.GEMINI_API_KEY,
+      geminiModel: process.env.GEMINI_MODEL,
+      customBaseUrl: process.env.CUSTOM_AI_BASE_URL,
+      customApiKey: process.env.CUSTOM_AI_API_KEY,
+      customModelName: process.env.CUSTOM_AI_MODEL
+    };
+
+    const result = await aiService.generateCampaignMatrixPrompts({
+      campaignName,
+      provider: provider || 'gemini',
+      config: aiConfig
+    });
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('[Route AI Campaign Prompts] Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

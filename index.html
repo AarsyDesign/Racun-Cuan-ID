@@ -420,8 +420,28 @@
 
             <form id="new-campaign-form">
               <div class="form-group">
-                <label class="form-label" for="camp-name">Campaign Name</label>
-                <input type="text" id="camp-name" class="form-input" placeholder="Contoh: Minimalist Bedroom Decor" required>
+                <label class="form-label" for="camp-name" style="display:flex; justify-content:space-between; align-items:center;">
+                  <span>Campaign Name</span>
+                  <span style="font-size: 11px; color: #60a5fa; font-weight: normal;">🤖 AI Powered</span>
+                </label>
+                <input type="text" id="camp-name" class="form-input" placeholder="Contoh: Man Fashion / OOTD Pria / Skincare" required>
+                
+                <!-- AI Assistant Trigger & Niche Presets -->
+                <div style="margin-top: 8px;">
+                  <button type="button" id="btn-ai-generate-campaign-prompt" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, rgba(230, 0, 35, 0.25), rgba(99, 102, 241, 0.25)); border: 1px solid rgba(230, 0, 35, 0.4); color: #fff; font-weight: 600; font-size: 12px; padding: 7px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s ease;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    <span>✨ Auto-Generate Prompt Matrix dengan AI</span>
+                  </button>
+                  
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;" id="campaign-niche-presets">
+                    <button type="button" class="btn-niche-preset" data-niche="Man Fashion" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 10.5px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">👔 Man Fashion</button>
+                    <button type="button" class="btn-niche-preset" data-niche="OOTD Fashion Wanita" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 10.5px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">👗 Women OOTD</button>
+                    <button type="button" class="btn-niche-preset" data-niche="Skincare & Beauty" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 10.5px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">💄 Skincare</button>
+                    <button type="button" class="btn-niche-preset" data-niche="Home Decor & Kamar Estetik" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 10.5px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">🏡 Home Decor</button>
+                    <button type="button" class="btn-niche-preset" data-niche="Gadget & Tech Setup" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 10.5px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">📱 Gadget</button>
+                    <button type="button" class="btn-niche-preset" data-niche="Perlengkapan Dapur" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); font-size: 10.5px; padding: 2px 8px; border-radius: 4px; cursor: pointer;">🍳 Dapur</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 4-Field Modular Prompt Matrix -->

@@ -426,12 +426,129 @@ class PinMatrixStudio {
     document.querySelectorAll('.prompt-chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const targetId = chip.getAttribute('data-target');
-        const val = chip.getAttribute('data-val');
+        const val = chip.getAttribute('data-text') || chip.getAttribute('data-val');
         const target = document.getElementById(targetId);
         if (target && val) {
           const current = target.value.trim();
           target.value = current ? `${current}, ${val}` : val;
           target.focus();
+        }
+      });
+    });
+
+    // AI Campaign Prompt Generator Button
+    const btnAiCampaign = document.getElementById('btn-ai-generate-campaign-prompt');
+    const inputCampName = document.getElementById('camp-name');
+
+    const generateAiPromptsForCampaign = async (nameOverride = null) => {
+      const campName = (nameOverride || inputCampName?.value || '').trim();
+      if (!campName) {
+        this.showToast('Ketik Nama Kampanye terlebih dahulu (misal: Man Fashion, Skincare, dll)', 'warning');
+        if (inputCampName) inputCampName.focus();
+        return;
+      }
+
+      if (inputCampName && nameOverride) {
+        inputCampName.value = nameOverride;
+      }
+
+      const originalBtnHtml = btnAiCampaign ? btnAiCampaign.innerHTML : '';
+      if (btnAiCampaign) {
+        btnAiCampaign.disabled = true;
+        btnAiCampaign.innerHTML = `<span>⏳ AI sedang meracik 4-Field Matrix untuk "${campName}"...</span>`;
+      }
+
+      try {
+        const res = await fetch(`${this.apiBase}/ai/generate-campaign-prompts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            campaignName: campName,
+            provider: 'gemini'
+          })
+        });
+
+        const resData = await res.json();
+        if (resData.success && resData.data) {
+          const d = resData.data;
+          const elSubj = document.getElementById('camp-subjects');
+          const elObj = document.getElementById('camp-object-outfit');
+          const elLoc = document.getElementById('camp-locations');
+          const elVib = document.getElementById('camp-vibes');
+          const elBoard = document.getElementById('camp-target-board');
+          const elSubId = document.getElementById('camp-subid');
+
+          if (elSubj && d.subjects) elSubj.value = d.subjects;
+          if (elObj && d.objectOutfit) elObj.value = d.objectOutfit;
+          if (elLoc && d.locations) elLoc.value = d.locations;
+          if (elVib && d.vibes) elVib.value = d.vibes;
+          if (elBoard && d.targetBoard) elBoard.value = d.targetBoard;
+          if (elSubId && d.subId) elSubId.value = d.subId;
+
+          this.showToast(`✨ Prompt Matrix & Target Board untuk "${campName}" siap!`, 'success');
+        } else {
+          throw new Error(resData.error || 'Gagal generate AI matrix');
+        }
+      } catch (err) {
+        console.warn('[Studio] AI prompt gen error, applying local smart matrix:', err);
+        // Instant local smart fallback
+        const n = campName.toLowerCase();
+        let sub = "Charismatic Indonesian/Asian model, clean modern look, confident posture";
+        let obj = `Eye-level commercial shot of ${campName}, premium textures and accurate colors`;
+        let loc = "Bright daylight aesthetic editorial photo studio with soft morning shadows";
+        let vib = "Clean minimalist aesthetic, warm tones, high-converting Pinterest visual";
+        let brd = `Inspirasi ${campName}`;
+        let sid = 'pin_' + campName.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 15);
+
+        if (n.includes('pria') || n.includes('men') || n.includes('man') || n.includes('cowok')) {
+          sub = "Charismatic Indonesian male model in his 20s, clean modern haircut, confident relaxed posture";
+          obj = "Eye-level medium shot, variation of tailored slim-fit cargo pants, minimalist cotton shirt, leather watch";
+          loc = "Modern industrial cafe terrace with soft natural daylight";
+          vib = "Clean editorial street photography, neutral earth tones, 8k crisp details";
+          brd = "Inspirasi Gaya Pria";
+          sid = "pin_menstyle";
+        } else if (n.includes('wanita') || n.includes('women') || n.includes('cewek') || n.includes('hijab') || n.includes('ootd')) {
+          sub = "Chic modern Asian fashion model with natural glow, graceful smiling expression";
+          obj = "Medium full-body shot, breathable flowy linen dress or elegant modest blouse";
+          loc = "Bright daylight Scandinavian aesthetic room with sheer curtains";
+          vib = "Pastel warm aesthetic, luxury lifestyle magazine tone, creamy bokeh";
+          brd = "OOTD & Fashion Wanita";
+          sid = "pin_womenootd";
+        }
+
+        const elSubj = document.getElementById('camp-subjects');
+        const elObj = document.getElementById('camp-object-outfit');
+        const elLoc = document.getElementById('camp-locations');
+        const elVib = document.getElementById('camp-vibes');
+        const elBoard = document.getElementById('camp-target-board');
+        const elSubId = document.getElementById('camp-subid');
+
+        if (elSubj) elSubj.value = sub;
+        if (elObj) elObj.value = obj;
+        if (elLoc) elLoc.value = loc;
+        if (elVib) elVib.value = vib;
+        if (elBoard) elBoard.value = brd;
+        if (elSubId) elSubId.value = sid;
+
+        this.showToast(`✨ Smart Matrix untuk "${campName}" berhasil diisi!`, 'success');
+      } finally {
+        if (btnAiCampaign) {
+          btnAiCampaign.disabled = false;
+          btnAiCampaign.innerHTML = originalBtnHtml;
+        }
+      }
+    };
+
+    if (btnAiCampaign) {
+      btnAiCampaign.addEventListener('click', () => generateAiPromptsForCampaign());
+    }
+
+    // Niche preset pills
+    document.querySelectorAll('.btn-niche-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const niche = btn.getAttribute('data-niche');
+        if (niche) {
+          generateAiPromptsForCampaign(niche);
         }
       });
     });
