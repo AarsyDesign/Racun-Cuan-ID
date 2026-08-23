@@ -45,8 +45,8 @@ app.use('/api/affiliate', require('./routes/affiliate'));
 app.use('/api/n8n', require('./routes/n8n'));
 app.use('/api/teable', require('./routes/teable'));
 
-// Health Check
-app.get('/api/health', (req, res) => {
+// Health Check (both /health and /api/health)
+const healthHandler = (req, res) => {
   res.json({
     status: 'ok',
     app: 'racun cuan.id - Super App Khusus Pinterest & Telegram Affiliate Automation',
@@ -59,7 +59,9 @@ app.get('/api/health', (req, res) => {
       status: 'OPERATIONAL'
     }
   });
-});
+};
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
 
 // Root route redirect to Racun Cuan.id Studio
 app.get('/', (req, res) => {

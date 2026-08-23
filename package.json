@@ -1,0 +1,20 @@
+{
+  "name": "racun-cuan-id",
+  "version": "2.1.0",
+  "description": "Racun Cuan.id - Super App Khusus Pinterest & Telegram Affiliate Automation",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "server": "node server/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
