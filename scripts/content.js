@@ -372,39 +372,78 @@
    */
   function extractShopeeAffiliateDashboard(mode = 'viewport') {
     const products = [];
-    const seenTitles = new Set();
+    const seenKeys = new Set();
 
-    const allCards = Array.from(document.querySelectorAll('div, li, section')).filter(el => {
-      const text = el.textContent || '';
-      const hasAction = text.includes('Buat Link') || text.includes('Komisi') || text.includes('KOMISI');
-      const hasPrice = text.includes('Rp');
-      const hasImg = !!el.querySelector('img') || !!el.querySelector('div[style*="background"]');
-      const isCardSize = el.offsetWidth > 100 && el.offsetHeight > 140 && el.children.length >= 2;
-      return hasAction && hasPrice && hasImg && isCardSize;
+    // 1. Locate all product cards via "Buat Link" action buttons or direct offer containers
+    const actionButtons = Array.from(document.querySelectorAll('button, a, div')).filter(el => {
+      const t = (el.innerText || el.textContent || '').trim();
+      return (t === 'Buat Link' || t === 'Buat link') && el.offsetWidth > 30;
     });
 
-    const uniqueCards = allCards.filter(card => !allCards.some(other => other !== card && card.contains(other)));
-    const targetCards = mode === 'viewport' ? uniqueCards.filter(c => isElementInViewport(c)) : uniqueCards;
+    const candidateCards = [];
+
+    if (actionButtons.length > 0) {
+      actionButtons.forEach(btn => {
+        // Walk up DOM tree to find the outermost container that has BOTH the image/thumbnail and the title/price
+        let current = btn.parentElement;
+        let bestCard = null;
+
+        while (current && current !== document.body && current !== document.documentElement) {
+          const text = current.innerText || '';
+          const hasImg = !!current.querySelector('img') || !!current.querySelector('div[style*="background"]');
+          
+          if (hasImg && text.includes('Rp') && current.offsetHeight >= 150 && current.offsetWidth >= 110) {
+            bestCard = current;
+            // Stop if parent is a grid container or wrapper
+            const p = current.parentElement;
+            if (p && (p.children.length >= 3 || p.classList?.contains('grid') || p.style?.display === 'grid' || p.style?.display === 'flex')) {
+              break;
+            }
+          }
+          current = current.parentElement;
+        }
+
+        if (bestCard && !candidateCards.includes(bestCard)) {
+          candidateCards.push(bestCard);
+        }
+      });
+    }
+
+    // Fallback: If no "Buat Link" buttons found, use general element matching
+    if (candidateCards.length === 0) {
+      const allDivs = Array.from(document.querySelectorAll('div, li, section')).filter(el => {
+        const text = el.innerText || '';
+        const hasAction = text.includes('Buat Link') || text.includes('Komisi');
+        const hasPrice = text.includes('Rp');
+        const hasImg = !!el.querySelector('img') || !!el.querySelector('div[style*="background"]');
+        return hasAction && hasPrice && hasImg && el.offsetWidth > 110 && el.offsetHeight > 150;
+      });
+
+      // Keep OUTERMOST containers (containers not inside another candidate)
+      const outerCards = allDivs.filter(card => !allDivs.some(parent => parent !== card && parent.contains(card)));
+      candidateCards.push(...outerCards);
+    }
+
+    const targetCards = mode === 'viewport' ? candidateCards.filter(c => isElementInViewport(c)) : candidateCards;
 
     targetCards.forEach((card, index) => {
       try {
         const text = card.innerText || card.textContent || '';
 
-        // Title
-        const titleEl = card.querySelector('h1, h2, h3, h4, h5, div[class*="title"], div[class*="name"], span[class*="title"], div[title]') || card.querySelector('img[alt]');
+        // Extract Title
         let title = '';
+        const titleEl = card.querySelector('div[class*="title"], div[class*="name"], span[class*="title"], h3, h4, h5, div[title]') || card.querySelector('img[alt]');
         if (titleEl) {
-          title = titleEl.getAttribute('title') || titleEl.getAttribute('alt') || titleEl.textContent || '';
+          title = titleEl.getAttribute('title') || titleEl.getAttribute('alt') || titleEl.innerText || titleEl.textContent || '';
         }
         if (!title || title.length < 5) {
-          const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8 && !l.startsWith('Rp') && !l.includes('Komisi') && !l.includes('Terjual') && !l.includes('Buat Link'));
+          const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 8 && !l.startsWith('Rp') && !l.toLowerCase().includes('komisi') && !l.toLowerCase().includes('terjual') && !l.includes('Buat Link'));
           title = lines[0] || `Produk Penawaran Shopee #${index + 1}`;
         }
         title = cleanTitleString(title);
-        if (seenTitles.has(title)) return;
-        seenTitles.add(title);
+        if (!title) return;
 
-        // Real Shopee Image from Card Box
+        // Extract Real Product Image
         const imageUrl = extractImageFromCard(card);
 
         // Price
@@ -430,7 +469,7 @@
         const soldCount = soldMatch ? soldMatch[0] : 'Terjual';
         const isMall = text.includes('Mall');
         const isStar = text.includes('Star');
-        const hasKomisiXtra = text.includes('KOMISI XTRA') || text.includes('Komisi Xtra');
+        const hasKomisiXtra = text.includes('KOMISI XTRA') || text.includes('Komisi Xtra') || text.includes('Komisi Ekstra');
         const hasFreeSample = text.includes('Sampel Gratis');
 
         // Link
@@ -450,6 +489,10 @@
         if (!itemId) itemId = `aff_${Date.now()}_${index}`;
         if (!cleanUrl) cleanUrl = `https://shopee.co.id/product/${shopId || 'offer'}/${itemId}`;
 
+        const uniqueKey = itemId + '_' + title;
+        if (seenKeys.has(uniqueKey)) return;
+        seenKeys.add(uniqueKey);
+
         products.push({
           id: `prod_aff_${itemId}_${Date.now()}`,
           itemId: itemId,
@@ -468,13 +511,15 @@
           shopName: hasKomisiXtra ? 'Toko Komisi XTRA' : 'Shopee Verified Seller',
           shopLocation: 'Shopee Affiliate Offer',
           shopType: isMall ? 'Mall' : (isStar ? 'Star+' : 'Regular'),
-          imageUrl: imageUrl,
-          galleryImages: [imageUrl],
+          imageUrl: imageUrl || '',
+          galleryImages: imageUrl ? [imageUrl] : [],
           productUrl: cleanUrl,
           isFromAffiliateDashboard: true,
           scrapedAt: new Date().toISOString()
         });
-      } catch (err) {}
+      } catch (err) {
+        console.warn('[Affiliate Scraper Item Error]', err);
+      }
     });
 
     return products;
@@ -627,45 +672,56 @@
   function extractImageFromCard(card) {
     if (!card) return '';
 
-    // 1. Check all <img> tags in the card
-    const allImgs = Array.from(card.querySelectorAll('img'));
-    const validImgs = allImgs.filter(img => {
-      const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
-      return isValidShopeeProductImage(src);
-    });
+    const candidates = [];
 
-    if (validImgs.length > 0) {
-      // Sort by display size (largest image first) to avoid tiny badge icons
-      validImgs.sort((a, b) => {
-        const areaA = (a.offsetWidth || a.naturalWidth || 1) * (a.offsetHeight || a.naturalHeight || 1);
-        const areaB = (b.offsetWidth || b.naturalWidth || 1) * (b.offsetHeight || b.naturalHeight || 1);
-        return areaB - areaA;
-      });
-      const chosen = validImgs[0];
-      const src = chosen.currentSrc || chosen.src || chosen.getAttribute('src') || chosen.getAttribute('data-src') || chosen.getAttribute('data-lazy-src') || '';
-      if (src) return cleanShopeeImageUrl(src);
+    // 1. Search all <img> in card and card.parentElement
+    const imgs = Array.from(card.querySelectorAll('img'));
+    if (imgs.length === 0 && card.parentElement) {
+      imgs.push(...Array.from(card.parentElement.querySelectorAll('img')));
     }
 
-    // 2. Check CSS background-images in the card
-    const bgEls = Array.from(card.querySelectorAll('div[style*="background"], span[style*="background"], a[style*="background"]'));
+    for (const img of imgs) {
+      const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || '';
+      if (isValidShopeeProductImage(src)) {
+        const clean = cleanShopeeImageUrl(src);
+        const w = img.offsetWidth || img.naturalWidth || 100;
+        const h = img.offsetHeight || img.naturalHeight || 100;
+        candidates.push({ url: clean, area: w * h });
+      }
+    }
+
+    // 2. Search background-images in elements
+    const bgEls = Array.from(card.querySelectorAll('div, span, a'));
     if (card.getAttribute('style')?.includes('background')) bgEls.unshift(card);
     for (const el of bgEls) {
       const style = el.getAttribute('style') || '';
-      const match = style.match(/url\(['"]?(https?:\/\/[^'"\)]+)['"]?\)/i);
-      if (match && isValidShopeeProductImage(match[1])) {
-        return cleanShopeeImageUrl(match[1]);
+      const match = style.match(/url\(['"]?([^'"\)]+)['"]?\)/i);
+      if (match) {
+        let rawUrl = match[1].replace(/&quot;/g, '').replace(/&#39;/g, '').trim();
+        if (isValidShopeeProductImage(rawUrl)) {
+          const clean = cleanShopeeImageUrl(rawUrl);
+          const w = el.offsetWidth || 100;
+          const h = el.offsetHeight || 100;
+          candidates.push({ url: clean, area: w * h });
+        }
       }
     }
 
-    // 3. Fallback: Check standard Shopee file storage URLs in any attribute
-    for (const img of allImgs) {
-      const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
-      if (src && (src.includes('susercontent.com/file/') || src.includes('cf.shopee.co.id/file/'))) {
-        const lower = src.toLowerCase();
-        if (!lower.includes('badge') && !lower.includes('icon') && !lower.includes('komisi')) {
-          return cleanShopeeImageUrl(src);
+    // 3. Fallback: Any img with susercontent or shopee
+    if (candidates.length === 0) {
+      for (const img of imgs) {
+        const src = img.currentSrc || img.src || img.getAttribute('src') || img.getAttribute('data-src') || '';
+        if (src && (src.includes('susercontent.com') || src.includes('cf.shopee.co.id'))) {
+          if (!src.includes('label_xtra') && !src.includes('.svg')) {
+            candidates.push({ url: cleanShopeeImageUrl(src), area: 50 });
+          }
         }
       }
+    }
+
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => b.area - a.area);
+      return candidates[0].url;
     }
 
     return '';
@@ -673,17 +729,16 @@
 
   function isValidShopeeProductImage(url) {
     if (!url || typeof url !== 'string') return false;
-    if (url.startsWith('data:image/svg') || url.includes('base64,R0lGOD') || url.includes('empty.png') || url.endsWith('.svg')) return false;
+    if (url.startsWith('data:image/svg') || url.includes('base64,R0lGOD') || url.includes('empty.png') || url.endsWith('.svg') || url.includes('.svg?')) return false;
 
     const lower = url.toLowerCase();
-    // Exclude badges, icons, avatars, and overlays
-    const blacklist = ['badge', 'komisi', 'xtra', 'icon', 'avatar', 'logo', 'star', 'mall', 'ribbon', 'banner', 'label', 'tier', 'grade', 'rating'];
-    for (const term of blacklist) {
-      if (lower.includes(term)) return false;
+    // Exclude static ribbon/badge SVG assets and avatars
+    if (lower.includes('label_xtra') || lower.includes('static/img/label') || lower.includes('avatar') || lower.includes('/icon_') || lower.includes('/icons/')) {
+      return false;
     }
 
     // Must be valid Shopee image URL
-    return url.includes('susercontent.com') || url.includes('shopee') || url.includes('cf.') || url.startsWith('http');
+    return url.includes('susercontent.com') || url.includes('cf.shopee.co.id') || url.includes('shopee') || url.startsWith('http');
   }
 
   function cleanShopeeImageUrl(url) {
