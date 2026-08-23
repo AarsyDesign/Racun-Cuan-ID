@@ -334,7 +334,13 @@ class PinterestPublisher {
 
     if (!res.ok) {
       const errText = await res.text();
-      throw new Error(`Token tidak valid (${res.status}): ${errText}`);
+      let msg = `Token tidak valid (${res.status}): ${errText}`;
+      if (errText.includes('consumer type is not supported')) {
+        msg = `Aplikasi Pinterest masih dalam status 'Under Review' atau akun pengembang belum beralih ke Pinterest Business Account. Silakan ubah ke Akun Bisnis di https://pinterest.com/business/convert/ dan tunggu persetujuan tim Pinterest.`;
+      } else if (errText.includes('Authentication failed')) {
+        msg = `Autentikasi gagal (401). Pastikan token disalin lengkap dan status aplikasi di Pinterest Developer Portal sudah aktif.`;
+      }
+      throw new Error(msg);
     }
 
     return await res.json();
