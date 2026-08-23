@@ -131,7 +131,49 @@ router.get('/analytics', async (req, res) => {
   try {
     const { start_date, end_date, metric_types } = req.query;
     const analytics = await pinterestPublisher.getUserAnalytics(token, start_date, end_date, metric_types);
-    res.json({ success: true, analytics });
+// POST /api/pinterest/verify-session - Verify Pinterest Web Session Cookie
+router.post('/verify-session', async (req, res) => {
+  try {
+    const conn = dbService.getConnections();
+    const sessionCookie = req.body.sessionCookie || conn.pinterestSessionCookie || process.env.PINTEREST_SESSION_COOKIE;
+    const csrfToken = req.body.csrfToken || conn.pinterestCsrfToken || process.env.PINTEREST_CSRF_TOKEN;
+
+    if (!sessionCookie) {
+      return res.status(400).json({ success: false, error: 'Session Cookie wajib diisi.' });
+    }
+
+    const profile = await pinterestPublisher.verifySessionCookie(sessionCookie, csrfToken);
+
+    // Auto-update connections if verified
+    dbService.updateConnections({
+      pinterestSessionCookie: sessionCookie,
+      pinterestUsername: profile.username,
+      pinterestStatus: 'CONNECTED',
+      pinterestApiConnected: true
+    });
+
+    res.json({ success: true, profile });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// GET /api/pinterest/session-boards - Read Boards using Pinterest Web Session Cookie
+router.get('/session-boards', async (req, res) => {
+  try {
+    const conn = dbService.getConnections();
+    const sessionCookie = req.query.sessionCookie || conn.pinterestSessionCookie || process.env.PINTEREST_SESSION_COOKIE;
+    const csrfToken = req.query.csrfToken || conn.pinterestCsrfToken || process.env.PINTEREST_CSRF_TOKEN;
+
+    if (!sessionCookie) {
+      return res.status(400).json({ success: false, error: 'Session Cookie belum diisi.' });
+    }
+
+    const cookieHeader = pinterestPublisher.buildCookieString(sessionCookie, csrfToken);
+    const csrf = pinterestPublisher.extractCsrfToken(cookieHeader);
+    const boards = await pinterestPublisher.getWebSessionBoards(cookieHeader, csrf);
+
+    res.json({ success: true, count: boards.length, boards });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

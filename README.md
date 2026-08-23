@@ -162,7 +162,8 @@ PORT=3000
 NODE_ENV=production
 TELEGRAM_BOT_TOKEN=1234...
 TELEGRAM_CHANNEL_ID=@namachannelanda
-PINTEREST_ACCESS_TOKEN=pina_...
+PINTEREST_SESSION_COOKIE=cookie_value_here
+PINTEREST_ACCESS_TOKEN=pina_... (opsional jika ada)
 GEMINI_API_KEY=AIzaSy...
 ```
 

@@ -238,6 +238,8 @@ class AffiliatorKillerApp {
     this.settingCustomApiKey = document.getElementById('setting-custom-api-key');
     this.settingCustomModelName = document.getElementById('setting-custom-model-name');
     this.settingCustomPrompt = document.getElementById('setting-custom-prompt');
+    this.settingPinterestSessionCookie = document.getElementById('setting-pinterest-session-cookie');
+    this.settingPinterestBoardId = document.getElementById('setting-pinterest-board-id');
     this.settingSheetsWebhookUrl = document.getElementById('setting-sheets-webhook-url');
     this.btnOpenSheetsGuide = document.getElementById('btn-open-sheets-guide');
     this.btnTestSheetsConnection = document.getElementById('btn-test-sheets-connection');
@@ -1748,6 +1750,8 @@ Format Output WAJIB dalam JSON valid:
     this.settingCustomModelName.value = this.settings.customModelName || 'opencode-v1';
     this.settingCustomPrompt.value = this.settings.customPromptTemplate || '';
 
+    if (this.settingPinterestSessionCookie) this.settingPinterestSessionCookie.value = this.settings.pinterestSessionCookie || '';
+    if (this.settingPinterestBoardId) this.settingPinterestBoardId.value = this.settings.pinterestBoardId || '';
     this.settingSheetsWebhookUrl.value = this.settings.sheetsWebhookUrl || '';
     if (this.settingTelegramBotToken) this.settingTelegramBotToken.value = this.settings.telegramBotToken || '';
     if (this.settingTelegramChannelId) this.settingTelegramChannelId.value = this.settings.telegramChannelId || '';
@@ -1791,6 +1795,8 @@ Format Output WAJIB dalam JSON valid:
     this.settings.customModelName = this.settingCustomModelName.value.trim();
     this.settings.customPromptTemplate = this.settingCustomPrompt.value;
 
+    if (this.settingPinterestSessionCookie) this.settings.pinterestSessionCookie = this.settingPinterestSessionCookie.value.trim();
+    if (this.settingPinterestBoardId) this.settings.pinterestBoardId = this.settingPinterestBoardId.value.trim();
     this.settings.sheetsWebhookUrl = this.settingSheetsWebhookUrl.value.trim();
     if (this.settingTelegramBotToken) this.settings.telegramBotToken = this.settingTelegramBotToken.value.trim();
     if (this.settingTelegramChannelId) this.settings.telegramChannelId = this.settingTelegramChannelId.value.trim();
@@ -1799,6 +1805,21 @@ Format Output WAJIB dalam JSON valid:
     this.settings.affiliateSubId = this.settingAffiliateSubid.value.trim() || 'pinterest_pins';
 
     await this.saveSettings();
+
+    // Sync to backend connections
+    try {
+      fetch(`${this.settings.backendUrl || 'http://localhost:3000'}/api/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pinterestSessionCookie: this.settings.pinterestSessionCookie,
+          pinterestBoardId: this.settings.pinterestBoardId,
+          telegramBotToken: this.settings.telegramBotToken,
+          telegramChannelId: this.settings.telegramChannelId
+        })
+      }).catch(() => {});
+    } catch (e) {}
+
     await this.checkBackendStatus();
     this.showToast('✅ Semua pengaturan berhasil disimpan permanen!', 'success');
   }

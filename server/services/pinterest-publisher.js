@@ -18,11 +18,21 @@ class PinterestPublisher {
     const connections = dbService.getConnections();
     const config = dbService.getBotConfig();
     
-    // Automatically prioritize API_V5 if access token is available
+    // Automatically prioritize API_V5 if access token is available, or WEB_SESSION if session cookie is present
     const accessToken = options.accessToken || connections.pinterestAccessToken || process.env.PINTEREST_ACCESS_TOKEN;
+    const sessionCookie = options.sessionCookie || connections.pinterestSessionCookie || process.env.PINTEREST_SESSION_COOKIE;
     const configuredBoardId = options.boardId || pinItem.boardId || connections.pinterestBoardId;
     
-    let mode = options.mode || config.mode || (accessToken && configuredBoardId ? 'API_V5' : 'HYBRID');
+    let mode = options.mode || config.mode;
+    if (!mode || mode === 'HYBRID') {
+      if (accessToken) {
+        mode = 'API_V5';
+      } else if (sessionCookie) {
+        mode = 'WEB_SESSION';
+      } else {
+        mode = 'HYBRID';
+      }
+    }
 
     dbService.addLog('INFO', 'PUBLISHER', `Memulai publish Pin: "${pinItem.title.substring(0, 40)}..." ke Board: [${pinItem.targetBoard || configuredBoardId || 'Default'}] via Mode: ${mode}`);
 
@@ -31,7 +41,7 @@ class PinterestPublisher {
 
       if (mode === 'API_V5' && accessToken) {
         result = await this.publishViaApiV5(pinItem, accessToken, configuredBoardId);
-      } else if (mode === 'WEB_SESSION') {
+      } else if ((mode === 'WEB_SESSION' || sessionCookie) && sessionCookie) {
         result = await this.publishViaWebSession(pinItem, options);
       } else {
         // HYBRID / INTENT Mode
@@ -347,14 +357,220 @@ class PinterestPublisher {
     return await res.json();
   }
 
-  async publishViaWebSession(pinItem, options) {
-    // Simulates or uses Pinterest Web session cookies / Puppeteer endpoint
-    await new Promise(r => setTimeout(r, 1200)); // anti-spam humanized wait
-    const pinId = `web_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  /**
+   * Cleans and formats cookie string for Pinterest Web requests
+   */
+  buildCookieString(cookieInput, csrfToken = '') {
+    if (!cookieInput) return '';
+    let raw = cookieInput.trim();
+    
+    // If user pasted just the token value of _pinterest_sess
+    if (!raw.includes('=')) {
+      raw = `_pinterest_sess=${raw}`;
+    }
+    
+    // Ensure csrftoken is in cookie if provided
+    if (csrfToken && !raw.includes('csrftoken=')) {
+      raw += `; csrftoken=${csrfToken.trim()}`;
+    } else if (!raw.includes('csrftoken=')) {
+      // Extract csrftoken from cookie if present or generate random 32-char hex
+      const match = raw.match(/csrftoken=([a-zA-Z0-9]+)/);
+      if (!match) {
+        const dummyCsrf = Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+        raw += `; csrftoken=${dummyCsrf}`;
+      }
+    }
+    return raw;
+  }
+
+  extractCsrfToken(cookieString) {
+    const match = (cookieString || '').match(/csrftoken=([a-zA-Z0-9]+)/);
+    if (match) return match[1];
+    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  }
+
+  /**
+   * Validates Pinterest Web Session Cookie by fetching logged in user profile
+   */
+  async verifySessionCookie(cookieInput, csrfInput = '') {
+    const cookieHeader = this.buildCookieString(cookieInput, csrfInput);
+    const csrfToken = this.extractCsrfToken(cookieHeader);
+
+    const url = 'https://www.pinterest.com/resource/UserResource/get/';
+    const body = new URLSearchParams({
+      source_url: '/',
+      data: JSON.stringify({ options: {}, context: {} })
+    });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Cookie': cookieHeader,
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': 'https://www.pinterest.com/',
+        'Origin': 'https://www.pinterest.com'
+      },
+      body: body.toString()
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Session Cookie tidak valid atau sudah kedaluwarsa (${res.status}): ${errText.substring(0, 100)}`);
+    }
+
+    const json = await res.json();
+    const userData = json.resource_response?.data;
+    if (!userData || !userData.username) {
+      throw new Error('Gagal memverifikasi user dari Session Cookie. Pastikan _pinterest_sess disalin lengkap.');
+    }
+
+    return {
+      valid: true,
+      username: userData.username,
+      fullName: userData.full_name || userData.username,
+      id: userData.id,
+      imageLargeUrl: userData.image_large_url
+    };
+  }
+
+  /**
+   * Internal Pinterest Web API: POST /resource/PinResource/create/
+   * Publishes Pin directly using Pinterest Web Session Cookie 24/7 on Cloud
+   */
+  async publishViaWebSession(pinItem, options = {}) {
+    const connections = dbService.getConnections();
+    const cookieInput = options.sessionCookie || connections.pinterestSessionCookie || process.env.PINTEREST_SESSION_COOKIE;
+    const csrfInput = options.csrfToken || connections.pinterestCsrfToken || process.env.PINTEREST_CSRF_TOKEN;
+
+    if (!cookieInput) {
+      throw new Error('Pinterest Session Cookie (_pinterest_sess) belum diisi. Silakan masukkan di menu Connections atau Environment Variable.');
+    }
+
+    const cookieHeader = this.buildCookieString(cookieInput, csrfInput);
+    const csrfToken = this.extractCsrfToken(cookieHeader);
+
+    // Board ID
+    let boardId = pinItem.boardId || connections.pinterestBoardId;
+    if (!boardId) {
+      // Try to fetch user boards using session cookie
+      try {
+        const boardsRes = await this.getWebSessionBoards(cookieHeader, csrfToken);
+        if (boardsRes && boardsRes.length > 0) {
+          boardId = boardsRes[0].id;
+        }
+      } catch (e) {
+        console.warn('[Pinterest Web Session] Auto-fetch boards failed:', e.message);
+      }
+    }
+
+    if (!boardId) {
+      throw new Error('Board ID Pinterest belum ditentukan. Silakan isi Board ID di antrean atau pengaturan.');
+    }
+
+    const title = (pinItem.title || 'Rekomendasi Produk').trim().substring(0, 100);
+    const description = (pinItem.description || pinItem.title || '').trim().substring(0, 800);
+    const link = (pinItem.affiliateUrl || pinItem.productUrl || 'https://shopee.co.id').trim();
+    const imageUrl = pinItem.imageUrl || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&auto=format&fit=crop&q=80';
+
+    const url = 'https://www.pinterest.com/resource/PinResource/create/';
+    const postData = {
+      options: {
+        board_id: String(boardId).trim(),
+        image_url: imageUrl,
+        title: title,
+        description: description,
+        link: link,
+        source_url: '/pin-builder/'
+      },
+      context: {}
+    };
+
+    const body = new URLSearchParams({
+      source_url: '/pin-builder/',
+      data: JSON.stringify(postData)
+    });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Cookie': cookieHeader,
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': 'https://www.pinterest.com/pin-builder/',
+        'Origin': 'https://www.pinterest.com'
+      },
+      body: body.toString()
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      let msg = `Pinterest Web Session Error (${res.status}): ${errText.substring(0, 150)}`;
+      if (res.status === 401 || res.status === 403) {
+        msg = 'Sesi login Pinterest kedaluwarsa. Silakan perbarui cookie _pinterest_sess di menu Connections.';
+      }
+      throw new Error(msg);
+    }
+
+    const json = await res.json();
+    const createdPin = json.resource_response?.data;
+
+    if (!createdPin || (!createdPin.id && !createdPin.url)) {
+      const errDetail = json.resource_response?.error?.message || 'Respons tidak memuat data Pin';
+      throw new Error(`Gagal membuat Pin via Web Session: ${errDetail}`);
+    }
+
+    const pinId = createdPin.id || `pin_${Date.now()}`;
+    const pinUrl = createdPin.url ? (createdPin.url.startsWith('http') ? createdPin.url : `https://www.pinterest.com${createdPin.url}`) : `https://www.pinterest.com/pin/${pinId}`;
+
     return {
       pinId,
-      pinUrl: `https://www.pinterest.com/pin/${pinId}`
+      pinUrl,
+      data: createdPin
     };
+  }
+
+  /**
+   * Fetches user boards via Pinterest Web Session
+   */
+  async getWebSessionBoards(cookieHeader, csrfToken) {
+    const url = 'https://www.pinterest.com/resource/BoardsResource/get/';
+    const body = new URLSearchParams({
+      source_url: '/',
+      data: JSON.stringify({ options: { field_set_key: 'detailed' }, context: {} })
+    });
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Cookie': cookieHeader,
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Referer': 'https://www.pinterest.com/',
+        'Origin': 'https://www.pinterest.com'
+      },
+      body: body.toString()
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const rawBoards = json.resource_response?.data || [];
+      return rawBoards.map(b => ({
+        id: b.id,
+        name: b.name,
+        description: b.description || '',
+        privacy: b.privacy || 'PUBLIC',
+        pinCount: b.pin_count || 0,
+        url: b.url ? `https://www.pinterest.com${b.url}` : ''
+      }));
+    }
+    return [];
   }
 
   async publishViaHybrid(pinItem, options) {

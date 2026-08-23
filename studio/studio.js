@@ -257,7 +257,12 @@ class PinMatrixStudio {
       clearLogsBtn.addEventListener('click', () => this.clearLogs());
     }
 
-    // Pinterest Token Verification
+    // Pinterest Session & Token Verification
+    const verifyPinterestSessionBtn = document.getElementById('btn-verify-pinterest-session');
+    if (verifyPinterestSessionBtn) {
+      verifyPinterestSessionBtn.addEventListener('click', () => this.handleVerifyPinterestSession());
+    }
+
     const verifyPinterestBtn = document.getElementById('btn-verify-pinterest-token');
     if (verifyPinterestBtn) {
       verifyPinterestBtn.addEventListener('click', () => this.handleVerifyPinterestToken());
@@ -2456,6 +2461,125 @@ class PinMatrixStudio {
     } catch (e) {
       this.showToast(`❌ Gagal test koneksi: ${e.message}`, 'error');
     }
+  }
+
+  async handleVerifyPinterestSession() {
+    const input = document.getElementById('input-pinterest-session-cookie');
+    const cookieVal = input ? input.value.trim() : '';
+
+    if (!cookieVal) {
+      this.showToast('Masukkan Pinterest Session Cookie (_pinterest_sess) terlebih dahulu', 'warning');
+      if (input) input.focus();
+      return;
+    }
+
+    try {
+      this.showToast('🍪 Sedang memverifikasi Session Cookie ke Pinterest...', 'info');
+      const res = await fetch(`${this.apiBase}/pinterest/verify-session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionCookie: cookieVal })
+      });
+
+      const data = await res.json();
+      if (data.success && data.profile) {
+        const p = data.profile;
+        const meta = document.getElementById('pinterest-user-meta');
+        const badge = document.getElementById('pinterest-conn-badge');
+        if (meta) meta.innerHTML = `🟢 Akun: <strong>@${p.username}</strong> (${p.fullName || ''})`;
+        if (badge) {
+          badge.textContent = 'CONNECTED (SESSION 24/7)';
+          badge.className = 'conn-status-badge active';
+        }
+
+        // Fetch Boards via session
+        await this.loadPinterestSessionBoards(cookieVal);
+        this.showToast(`🎉 Pinterest Session terhubung! Akun: @${p.username}`, 'success');
+      } else {
+        throw new Error(data.error || 'Verifikasi session gagal');
+      }
+    } catch (err) {
+      this.showToast(`❌ Verifikasi Cookie gagal: ${err.message}`, 'error');
+    }
+  }
+
+  async loadPinterestSessionBoards(cookieVal) {
+    try {
+      const res = await fetch(`${this.apiBase}/pinterest/session-boards?sessionCookie=${encodeURIComponent(cookieVal)}`);
+      const data = await res.json();
+      const selectBoard = document.getElementById('select-pinterest-board');
+      if (selectBoard && data.success && data.boards) {
+        selectBoard.innerHTML = data.boards.map(b => `
+          <option value="${b.id}">${this.escapeHtml(b.name)} (${b.pinCount || 0} pins)</option>
+        `).join('');
+
+        if (data.boards.length > 0) {
+          this.handleBoardSelectionChange(data.boards[0].id, data.boards[0].name);
+        }
+      }
+    } catch (e) {
+      console.warn('[Pinterest] Load session boards warning:', e);
+    }
+  }
+
+  async handleVerifyPinterestToken() {
+    const input = document.getElementById('input-pinterest-token');
+    const token = input ? input.value.trim() : '';
+
+    if (!token) {
+      this.showToast('Masukkan Pinterest Access Token terlebih dahulu', 'warning');
+      if (input) input.focus();
+      return;
+    }
+
+    try {
+      this.showToast('🔑 Memverifikasi Token API ke Pinterest Developer Portal...', 'info');
+      const res = await fetch(`${this.apiBase}/pinterest/boards?token=${encodeURIComponent(token)}`);
+      const data = await res.json();
+      if (data.success) {
+        const selectBoard = document.getElementById('select-pinterest-board');
+        const badge = document.getElementById('pinterest-conn-badge');
+        if (badge) {
+          badge.textContent = 'CONNECTED (API v5)';
+          badge.className = 'conn-status-badge active';
+        }
+
+        if (selectBoard && data.boards) {
+          selectBoard.innerHTML = data.boards.map(b => `
+            <option value="${b.id}">${this.escapeHtml(b.name)} (${b.pinCount || 0} pins)</option>
+          `).join('');
+
+          if (data.boards.length > 0) {
+            this.handleBoardSelectionChange(data.boards[0].id, data.boards[0].name);
+          }
+        }
+
+        // Save token to backend connections
+        await fetch(`${this.apiBase}/connections`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pinterestAccessToken: token, pinterestStatus: 'CONNECTED' })
+        });
+
+        this.showToast(`🎉 Pinterest API v5 Token terverifikasi! (${data.count} Boards)`, 'success');
+      } else {
+        throw new Error(data.error || 'Token tidak valid');
+      }
+    } catch (err) {
+      this.showToast(`❌ Gagal verifikasi token: ${err.message}`, 'error');
+    }
+  }
+
+  async handleBoardSelectionChange(boardId, boardName = '') {
+    try {
+      const selectBoard = document.getElementById('select-pinterest-board');
+      const name = boardName || (selectBoard?.options[selectBoard.selectedIndex]?.text || '');
+      await fetch(`${this.apiBase}/connections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinterestBoardId: boardId, pinterestBoardName: name })
+      });
+    } catch (e) {}
   }
 
   showToast(message, type = 'info') {

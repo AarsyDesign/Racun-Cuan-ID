@@ -836,48 +836,67 @@
         </div>
 
         <div class="connection-grid">
-          <!-- Pinterest Official API v5 Card -->
+          <!-- Pinterest Connection Card (Session Cookie 24/7 & API v5) -->
           <div class="connection-card" style="grid-column: span 2;">
             <div>
               <div class="conn-header">
                 <div class="conn-icon pinterest">📌</div>
                 <div>
-                  <h4 style="color:#fff; font-size:15px; font-weight:700;">Pinterest API v5 (Official Direct Publisher)</h4>
-                  <div style="font-size:11px; color:var(--text-muted);">Publikasi Otomatis Langsung ke Akun Pinterest Anda</div>
+                  <h4 style="color:#fff; font-size:15px; font-weight:700;">Pinterest Auto-Publisher (Cloud 24/7 Sesi & API v5)</h4>
+                  <div style="font-size:11px; color:var(--text-muted);">Publikasi Otomatis Langsung ke Akun Pinterest Anda (Tanpa Perlu Laptop Terbuka)</div>
                 </div>
                 <span class="conn-status-badge" id="pinterest-conn-badge">NOT CONNECTED</span>
               </div>
               <p style="font-size:12.5px; color:var(--text-secondary); margin: 10px 0 16px;">
-                Menggunakan endpoint resmi <code>POST /v5/pins</code> untuk mempublikasikan pin, gambar, judul SEO, deskripsi, dan link affiliasi langsung ke Board Pinterest Anda tanpa perlu klik manual.
+                Mendukung <strong>Session Cookie (_pinterest_sess)</strong> untuk posting 24/7 di cloud tanpa perlu persetujuan API Developer, serta mendukung <strong>Pinterest API v5 resmi</strong>.
               </p>
 
-              <!-- Token & Board Input Form -->
+              <!-- Session Cookie & Board Input Form -->
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
                 <div>
                   <label class="form-label" style="font-size: 11px; display:flex; justify-content:space-between;">
-                    <span>Pinterest Access Token (Bearer Token)</span>
-                    <a href="https://developers.pinterest.com/apps/" target="_blank" style="color: #60a5fa; text-decoration:none;">Ambil Token ↗</a>
+                    <span>🍪 Pinterest Session Cookie (<code>_pinterest_sess</code>)</span>
+                    <span style="color: #34d399; font-size: 10.5px;">⭐ Rekomendasi (Bebas API)</span>
                   </label>
-                  <input type="password" id="input-pinterest-token" class="form-input" placeholder="pina_..." style="font-family: var(--font-mono); font-size: 12px;">
-                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">Token dari Pinterest Developer Portal dengan scope <code>boards:read</code> & <code>pins:write</code>.</div>
+                  <input type="password" id="input-pinterest-session-cookie" class="form-input" placeholder="Salin _pinterest_sess dari inspect cookies..." style="font-family: var(--font-mono); font-size: 12px;">
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">
+                    Cara ambil: Buka <strong>pinterest.com</strong> di Chrome &rarr; Tekan <strong>F12</strong> &rarr; Tab <strong>Application</strong> &rarr; <strong>Cookies</strong> &rarr; Salin value <code>_pinterest_sess</code>.
+                  </div>
                 </div>
 
                 <div>
                   <label class="form-label" style="font-size: 11px;">Target Board Utama</label>
                   <select id="select-pinterest-board" class="form-select" style="font-size: 12px;">
-                    <option value="">-- Masukkan Token & Klik Verifikasi Dulu --</option>
+                    <option value="">-- Masukkan Cookie / Token & Klik Verifikasi Dulu --</option>
                   </select>
-                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="pinterest-user-meta">Status: Menunggu token</div>
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="pinterest-user-meta">Status: Menunggu Session Cookie / Token</div>
                 </div>
               </div>
+
+              <!-- Collapsible Optional API v5 Token -->
+              <details style="margin-bottom: 14px; background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.08); border-radius: 6px; padding: 8px 12px;">
+                <summary style="font-size: 11.5px; color: var(--text-muted); cursor: pointer; user-select: none;">
+                  <span>⚙️ Opsi Lanjutan: Pinterest API v5 Access Token (Jika punya izin developer)</span>
+                </summary>
+                <div style="margin-top: 10px;">
+                  <label class="form-label" style="font-size: 11px; display:flex; justify-content:space-between;">
+                    <span>Pinterest Access Token (Bearer Token)</span>
+                    <a href="https://developers.pinterest.com/apps/" target="_blank" style="color: #60a5fa; text-decoration:none;">Ambil Token ↗</a>
+                  </label>
+                  <input type="password" id="input-pinterest-token" class="form-input" placeholder="pina_..." style="font-family: var(--font-mono); font-size: 12px;">
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">Opsional jika Anda sudah disetujui di Pinterest Developer Portal.</div>
+                </div>
+              </details>
             </div>
             
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-              <button class="btn-primary" style="width: auto; background: var(--accent-pinterest);" id="btn-verify-pinterest-token">
-                🔑 Verifikasi & Ambil Daftar Board
+              <button class="btn-primary" style="width: auto; background: var(--accent-pinterest);" id="btn-verify-pinterest-session">
+                🍪 Verifikasi Cookie & Ambil Board
               </button>
-              <button class="btn-secondary" id="btn-test-pinterest">⚡ Test Koneksi</button>
-              <a href="https://developers.pinterest.com/docs/api/v5/pins-create" target="_blank" class="btn-secondary" style="text-decoration:none;">📖 Dokumentasi API v5 ↗</a>
+              <button class="btn-secondary" id="btn-verify-pinterest-token">
+                🔑 Verifikasi API Token
+              </button>
+              <button class="btn-secondary" id="btn-test-pinterest">⚡ Test Kirim Pin</button>
             </div>
           </div>
 
