@@ -209,7 +209,16 @@ class PinMatrixStudio {
 
     // Update nav items
     document.querySelectorAll('.nav-item').forEach(nav => {
-      nav.classList.toggle('active', nav.getAttribute('data-tab') === tabId);
+      const isMatch = nav.getAttribute('data-tab') === tabId;
+      nav.classList.toggle('active', isMatch);
+      if (isMatch) {
+        nav.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    });
+
+    // Update header quick buttons active state
+    document.querySelectorAll('.header-action-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
     });
 
     // Update view panes

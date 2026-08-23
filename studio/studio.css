@@ -100,14 +100,49 @@ body {
 }
 
 .brand-section {
-  padding-bottom: 20px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .brand-logo-wrap {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.brand-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-action-btn:hover {
+  background: rgba(0, 220, 130, 0.15);
+  color: var(--accent-green);
+  border-color: rgba(0, 220, 130, 0.4);
+  transform: translateY(-1px);
+}
+
+.header-action-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .brand-icon {
@@ -1534,13 +1569,26 @@ body {
     overflow-x: auto !important;
     white-space: nowrap !important;
     gap: 6px !important;
-    padding: 4px 0 2px 0 !important;
+    padding: 6px 2px 6px 2px !important;
     width: 100% !important;
-    scrollbar-width: none !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(0, 220, 130, 0.4) transparent !important;
+    scroll-behavior: smooth !important;
   }
 
   .sidebar-nav::-webkit-scrollbar {
-    display: none !important;
+    height: 3px !important;
+    display: block !important;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-radius: 2px !important;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(0, 220, 130, 0.4) !important;
+    border-radius: 2px !important;
   }
 
   .sidebar-nav .nav-item {
