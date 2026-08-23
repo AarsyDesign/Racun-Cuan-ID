@@ -939,6 +939,21 @@
         </div>
 
         <div class="studio-card" style="max-width: 680px;">
+          <!-- 1. Backend Server Config -->
+          <div class="form-group" style="background: rgba(36, 161, 222, 0.07); border: 1px solid rgba(36, 161, 222, 0.25); padding: 14px; border-radius: 8px; margin-bottom: 20px;">
+            <label class="form-label" style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 700; color: #fff;">🌐 Backend Server URL (Railway / Hosted Cloud)</span>
+              <span id="backend-conn-status" style="font-size: 11px; font-weight: 600; color: var(--accent-green);">● Localhost / Auto</span>
+            </label>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <input type="text" id="setting-studio-backend-url" class="form-input" placeholder="https://your-app.up.railway.app atau http://localhost:3000" style="font-family: var(--font-mono); font-size: 12.5px;">
+              <button class="btn-secondary" id="btn-test-studio-backend" style="white-space: nowrap; font-size: 12px; border-color: rgba(36,161,222,0.4); color: #7dd3fc;">⚡ Test Server</button>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+              Masukkan URL Railway Anda (contoh: <code>https://racun-cuan-production.up.railway.app</code>) agar Studio dan Bot berjalan 24/7 di cloud.
+            </div>
+          </div>
+
           <div class="form-group">
             <label class="form-label">AI Engine Provider</label>
             <select class="form-select">

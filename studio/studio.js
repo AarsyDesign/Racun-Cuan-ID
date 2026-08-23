@@ -4,9 +4,15 @@
 
 class PinMatrixStudio {
   constructor() {
-    this.apiBase = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
-      ? `${window.location.origin}/api`
-      : 'http://localhost:3000/api';
+    const storedBackend = (typeof localStorage !== 'undefined') ? localStorage.getItem('pinmatrix_backend_url') : null;
+    if (storedBackend && storedBackend.trim().startsWith('http')) {
+      const clean = storedBackend.trim().replace(/\/+$/, '');
+      this.apiBase = clean.endsWith('/api') ? clean : `${clean}/api`;
+    } else {
+      this.apiBase = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
+        ? `${window.location.origin}/api`
+        : 'http://localhost:3000/api';
+    }
     this.activeTab = 'overview';
     this.products = [];
     this.productFilter = 'fresh';
@@ -27,8 +33,27 @@ class PinMatrixStudio {
   async init() {
     this.bindEvents();
     this.setupPromptHelpers();
+    this.initBackendSettingsUI();
     await this.fetchAllData();
     this.startLivePolling();
+  }
+
+  initBackendSettingsUI() {
+    const input = document.getElementById('setting-studio-backend-url');
+    const status = document.getElementById('backend-conn-status');
+    const stored = (typeof localStorage !== 'undefined') ? localStorage.getItem('pinmatrix_backend_url') : null;
+    if (input) {
+      input.value = stored || (this.apiBase ? this.apiBase.replace(/\/api$/, '') : 'http://localhost:3000');
+    }
+    if (status) {
+      if (stored && !stored.includes('localhost')) {
+        status.textContent = '● Cloud / Hosted';
+        status.style.color = '#38bdf8';
+      } else {
+        status.textContent = '● Localhost / Auto';
+        status.style.color = 'var(--accent-green)';
+      }
+    }
   }
 
   bindEvents() {
@@ -228,9 +253,14 @@ class PinMatrixStudio {
       verifyTgBtn.addEventListener('click', () => this.handleVerifyTelegramBot());
     }
 
+    const testBackendBtn = document.getElementById('btn-test-studio-backend');
+    if (testBackendBtn) {
+      testBackendBtn.addEventListener('click', () => this.handleTestStudioBackend());
+    }
+
     const saveSettingsBtn = document.getElementById('btn-save-settings');
     if (saveSettingsBtn) {
-      saveSettingsBtn.addEventListener('click', () => this.showToast('✅ Pengaturan berhasil disimpan!', 'success'));
+      saveSettingsBtn.addEventListener('click', () => this.handleSaveSettings());
     }
 
     // Pinterest Board Selection Change
@@ -2097,6 +2127,64 @@ class PinMatrixStudio {
         setTimeout(() => toast.remove(), 200);
       }
     }, 2600);
+  }
+
+  async handleTestStudioBackend() {
+    const input = document.getElementById('setting-studio-backend-url');
+    const status = document.getElementById('backend-conn-status');
+    const rawUrl = (input ? input.value : '').trim();
+    if (!rawUrl) {
+      this.showToast('⚠️ Masukkan URL backend terlebih dahulu!', 'warning');
+      return;
+    }
+    const cleanUrl = rawUrl.replace(/\/+$/, '');
+    const testEndpoint = cleanUrl.endsWith('/api') ? `${cleanUrl}/health` : `${cleanUrl}/api/health`;
+
+    this.showToast(`Menguji koneksi ke ${cleanUrl}...`, 'info');
+    try {
+      const res = await fetch(testEndpoint, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (status) {
+          status.textContent = '● Online (Terhubung)';
+          status.style.color = 'var(--accent-green)';
+        }
+        this.showToast(`✅ Server Online & Terhubung: ${cleanUrl}`, 'success');
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (e) {
+      if (status) {
+        status.textContent = '● Gagal Terhubung';
+        status.style.color = '#ef4444';
+      }
+      this.showToast(`❌ Gagal terhubung ke server (${e.message}). Pastikan server di Railway sudah Live!`, 'error');
+    }
+  }
+
+  async handleSaveSettings() {
+    const input = document.getElementById('setting-studio-backend-url');
+    const status = document.getElementById('backend-conn-status');
+    if (input) {
+      const rawUrl = input.value.trim();
+      if (rawUrl && rawUrl.startsWith('http')) {
+        const clean = rawUrl.replace(/\/+$/, '');
+        localStorage.setItem('pinmatrix_backend_url', clean);
+        this.apiBase = clean.endsWith('/api') ? clean : `${clean}/api`;
+        if (status) {
+          status.textContent = clean.includes('localhost') ? '● Localhost / Auto' : '● Cloud / Hosted';
+          status.style.color = clean.includes('localhost') ? 'var(--accent-green)' : '#38bdf8';
+        }
+        await this.fetchAllData();
+      } else if (!rawUrl) {
+        localStorage.removeItem('pinmatrix_backend_url');
+        this.apiBase = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
+          ? `${window.location.origin}/api`
+          : 'http://localhost:3000/api';
+        await this.fetchAllData();
+      }
+    }
+    this.showToast('✅ Semua pengaturan berhasil disimpan & disinkronkan!', 'success');
   }
 
   escapeHtml(text) {
