@@ -180,11 +180,15 @@ class AffiliatorKillerApp {
     // Tab 1: Product Deck
     this.btnScanViewport = document.getElementById('btn-scan-viewport');
     this.btnScanFullpage = document.getElementById('btn-scan-fullpage');
+    this.checkAutoShortlink = document.getElementById('check-auto-shortlink');
     this.inputSearchProducts = document.getElementById('input-search-products');
+    this.selectFilterStatus = document.getElementById('select-filter-status');
     this.selectFilterSort = document.getElementById('select-filter-sort');
     this.checkboxSelectAll = document.getElementById('checkbox-select-all');
     this.countSelected = document.getElementById('count-selected');
     this.countTotal = document.getElementById('count-total');
+    this.btnBulkQueue = document.getElementById('btn-bulk-queue');
+    this.btnBulkTelegram = document.getElementById('btn-bulk-telegram');
     this.btnBulkAi = document.getElementById('btn-bulk-ai');
     this.btnBulkSheets = document.getElementById('btn-bulk-sheets');
     this.btnBulkExportCsv = document.getElementById('btn-bulk-export-csv');
@@ -211,6 +215,7 @@ class AffiliatorKillerApp {
     this.btnCopyAffLink = document.getElementById('btn-copy-aff-link');
     this.btnActionPinNow = document.getElementById('btn-action-pin-now');
     this.btnActionSaveSheet = document.getElementById('btn-action-save-sheet');
+    this.btnActionSendTelegram = document.getElementById('btn-action-send-telegram');
     this.btnActionSendN8n = document.getElementById('btn-action-send-n8n');
     this.btnActionCopyAll = document.getElementById('btn-action-copy-all');
 
@@ -236,6 +241,9 @@ class AffiliatorKillerApp {
     this.settingSheetsWebhookUrl = document.getElementById('setting-sheets-webhook-url');
     this.btnOpenSheetsGuide = document.getElementById('btn-open-sheets-guide');
     this.btnTestSheetsConnection = document.getElementById('btn-test-sheets-connection');
+    this.settingTelegramBotToken = document.getElementById('setting-telegram-bot-token');
+    this.settingTelegramChannelId = document.getElementById('setting-telegram-channel-id');
+    this.btnTestTelegramConnection = document.getElementById('btn-test-telegram-connection');
     this.settingN8nWebhookUrl = document.getElementById('setting-n8n-webhook-url');
     this.settingN8nAuthToken = document.getElementById('setting-n8n-auth-token');
     this.btnTestN8nConnection = document.getElementById('btn-test-n8n-connection');
@@ -259,6 +267,17 @@ class AffiliatorKillerApp {
       this.saveSettings();
     });
 
+    // Real-time Shopee Shortlink Sniffer listener
+    if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+      chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.action === 'SHOPEE_SHORTLINK_CAPTURED' && msg.shortlink) {
+          this.handleCapturedShortlink(msg.shortlink);
+        } else if (msg.action === 'AUTO_SHORTLINK_PROGRESS') {
+          this.showToast(`⚡ Mengambil link: ${msg.current}/${msg.total} (${(msg.title || '').substring(0, 20)}...)`, 'info');
+        }
+      });
+    }
+
     // Quick Settings Button
     this.headerSettingsBtn.addEventListener('click', () => {
       this.switchTab('settings');
@@ -278,6 +297,7 @@ class AffiliatorKillerApp {
 
     // Search & Filter
     this.inputSearchProducts.addEventListener('input', () => this.renderProducts());
+    if (this.selectFilterStatus) this.selectFilterStatus.addEventListener('change', () => this.renderProducts());
     this.selectFilterSort.addEventListener('change', () => this.renderProducts());
 
     // Bulk Select All
@@ -293,6 +313,8 @@ class AffiliatorKillerApp {
     });
 
     // Bulk Actions
+    if (this.btnBulkQueue) this.btnBulkQueue.addEventListener('click', () => this.handleBulkEnqueue());
+    if (this.btnBulkTelegram) this.btnBulkTelegram.addEventListener('click', () => this.handleBulkTelegramBroadcast());
     this.btnBulkAi.addEventListener('click', () => this.handleBulkAi());
     this.btnBulkSheets.addEventListener('click', () => this.handleBulkSheets());
     this.btnBulkExportCsv.addEventListener('click', () => this.handleExportCsv(this.getSelectedProducts()));
@@ -335,6 +357,9 @@ class AffiliatorKillerApp {
     // Publish & Actions
     this.btnActionPinNow.addEventListener('click', () => this.handlePostToPinterest());
     this.btnActionSaveSheet.addEventListener('click', () => this.handleSaveToGoogleSheets());
+    if (this.btnActionSendTelegram) {
+      this.btnActionSendTelegram.addEventListener('click', () => this.handleSendToTelegram());
+    }
     this.btnActionSendN8n.addEventListener('click', () => this.handleSendToN8n());
     this.btnActionCopyAll.addEventListener('click', () => this.handleCopyFormattedText());
 
@@ -385,6 +410,9 @@ class AffiliatorKillerApp {
     this.btnSaveAllSettings.addEventListener('click', () => this.handleSaveSettings());
     if (this.btnTestSheetsConnection) {
       this.btnTestSheetsConnection.addEventListener('click', () => this.testGoogleSheetsConnection());
+    }
+    if (this.btnTestTelegramConnection) {
+      this.btnTestTelegramConnection.addEventListener('click', () => this.handleTestTelegramConnection());
     }
     if (this.btnTestN8nConnection) {
       this.btnTestN8nConnection.addEventListener('click', () => this.testN8nWebhook());
@@ -444,13 +472,14 @@ class AffiliatorKillerApp {
 
   // --- Scan Shopee Handler ---
   async handleScanShopee(mode = 'viewport') {
-    this.showToast('Memindai produk & komisi di halaman Shopee...', 'info');
+    this.showToast('Memindai produk & link affiliate Shopee...', 'info');
 
     if (typeof chrome !== 'undefined' && chrome.tabs) {
       try {
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         if (tab && tab.id) {
-          chrome.tabs.sendMessage(tab.id, { action: 'SCAN_SHOPEE_PAGE', mode }, (response) => {
+          const autoGenerateShortlinks = this.checkAutoShortlink ? this.checkAutoShortlink.checked : true;
+          chrome.tabs.sendMessage(tab.id, { action: 'SCAN_SHOPEE_PAGE', mode, autoGenerateShortlinks }, (response) => {
             if (chrome.runtime.lastError || !response || !response.products || response.products.length === 0) {
               this.showToast('Belum ada produk baru terdeteksi. Scroll halaman lalu scan lagi.', 'info');
               return;
@@ -458,7 +487,7 @@ class AffiliatorKillerApp {
 
             const newProducts = response.products.map(p => this.formatScrapedProduct(p));
             this.mergeScrapedProducts(newProducts);
-            this.showToast(`✨ Berhasil memindai ${newProducts.length} produk Shopee!`, 'success');
+            this.showToast(`✨ Berhasil memindai ${newProducts.length} produk & link affiliate Shopee!`, 'success');
           });
           return;
         }
@@ -472,6 +501,20 @@ class AffiliatorKillerApp {
       this.showToast('Berhasil memindai 4 produk Shopee (Demo Mode)', 'success');
       this.mergeScrapedProducts(SAMPLE_SHOPEE_PRODUCTS);
     }, 400);
+  }
+
+  handleCapturedShortlink(shortlink) {
+    if (!shortlink) return;
+    if (this.inputPinLink) {
+      this.inputPinLink.value = shortlink;
+    }
+    const product = this.products.find(p => p.id === this.activeAiProductId);
+    if (product) {
+      product.affiliateUrl = shortlink;
+      product.productUrl = shortlink;
+      this.saveLocalProducts();
+    }
+    this.showToast(`🎯 Link Affiliate Berhasil Ditangkap: ${shortlink}`, 'success');
   }
 
   formatScrapedProduct(raw) {
@@ -570,8 +613,16 @@ class AffiliatorKillerApp {
   renderProducts() {
     const searchTerm = (this.inputSearchProducts?.value || '').toLowerCase().trim();
     const sortValue = this.selectFilterSort?.value || 'default';
+    const statusFilter = this.selectFilterStatus?.value || 'fresh';
 
     let filtered = [...this.products];
+
+    // Status filter (fresh vs queued vs all)
+    if (statusFilter === 'fresh') {
+      filtered = filtered.filter(p => !p.isEnqueued && p.status !== 'Queued');
+    } else if (statusFilter === 'queued') {
+      filtered = filtered.filter(p => p.isEnqueued || p.status === 'Queued');
+    }
 
     // Search filter
     if (searchTerm) {
@@ -597,14 +648,16 @@ class AffiliatorKillerApp {
     if (filtered.length === 0) {
       this.productCardsContainer.innerHTML = '';
       this.deckEmptyState.classList.remove('hidden');
-      this.tabCountProducts.textContent = '0';
+      const freshCount = this.products.filter(p => !p.isEnqueued && p.status !== 'Queued').length;
+      this.tabCountProducts.textContent = String(freshCount);
       this.countTotal.textContent = '0';
       return;
     }
 
     this.deckEmptyState.classList.add('hidden');
-    this.tabCountProducts.textContent = String(this.products.length);
-    this.countTotal.textContent = String(this.products.length);
+    const freshCount = this.products.filter(p => !p.isEnqueued && p.status !== 'Queued').length;
+    this.tabCountProducts.textContent = String(freshCount);
+    this.countTotal.textContent = String(filtered.length);
 
     // Build Cards HTML
     this.productCardsContainer.innerHTML = filtered.map(prod => {
@@ -654,9 +707,17 @@ class AffiliatorKillerApp {
               </div>
 
               <div class="card-actions-row">
+                <button class="btn-card-action btn-card-queue" data-action="enqueue" data-id="${prod.id}" title="Acc / Masukkan langsung ke Antrean Queue" style="color: #10b981; border-color: rgba(16, 185, 129, 0.4);">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                  <span>Acc</span>
+                </button>
+                <button class="btn-card-action btn-card-tg" data-action="telegram" data-id="${prod.id}" title="Broadcast Langsung ke Telegram Channel" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.4);">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.93-1.28 4.88-2.12 5.86-2.54 2.8-.1.18 3.37.24 3.73.24.06 0 .17-.01.24-.07.08-.08.1-.19.11-.27-.01-.06-.02-.15-.02-.19z"/></svg>
+                  <span>TG</span>
+                </button>
                 <button class="btn-card-action btn-card-ai" data-action="ai" data-id="${prod.id}" title="Buka di AI Studio & Generate Pin (No-Slop)">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                  <span>AI Copy</span>
+                  <span>AI</span>
                 </button>
                 <button class="btn-card-action btn-card-pin" data-action="pin" data-id="${prod.id}" title="Post Langsung ke Pinterest">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345-.09.375-.291 1.199-.332 1.365-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z"/></svg>
@@ -664,10 +725,13 @@ class AffiliatorKillerApp {
                 </button>
                 <button class="btn-card-action btn-card-sheets" data-action="sheets" data-id="${prod.id}" title="Simpan ke Google Sheets">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                  <span>Sheets</span>
                 </button>
                 <button class="btn-card-action" data-action="copy" data-id="${prod.id}" title="Salin Rich Caption">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button class="btn-card-action" data-action="edit-link" data-id="${prod.id}" title="Edit / Ganti Link Affiliate Shopee">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  <span>Link</span>
                 </button>
                 <button class="btn-card-action btn-danger-text" data-action="delete" data-id="${prod.id}" title="Hapus Produk">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -698,8 +762,8 @@ class AffiliatorKillerApp {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const action = btn.getAttribute('data-action');
-        const id = btn.getAttribute('data-id');
-        this.handleCardAction(action, id);
+        const productId = btn.getAttribute('data-id');
+        this.handleCardAction(action, productId);
       });
     });
   }
@@ -719,7 +783,58 @@ class AffiliatorKillerApp {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;
 
-    if (action === 'ai') {
+    if (action === 'enqueue') {
+      this.handleSingleProductEnqueue(product);
+    } else if (action === 'telegram') {
+      this.handleSingleProductTelegram(product);
+    } else if (action === 'edit-link') {
+      if (typeof chrome !== 'undefined' && chrome.tabs) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          const tab = tabs[0];
+          if (tab && tab.id) {
+            chrome.tabs.sendMessage(tab.id, { action: 'GET_ACTIVE_MODAL_SHORTLINK' }, (resp) => {
+              if (resp && resp.success && resp.shortlink) {
+                product.affiliateUrl = resp.shortlink;
+                product.productUrl = resp.shortlink;
+                this.saveProductsToStorage();
+                this.renderProducts();
+                this.showToast(`🎯 Berhasil menangkap link affiliate dari Shopee: ${resp.shortlink}`, 'success');
+              } else {
+                const currentLink = product.affiliateUrl?.includes('s.shopee.co.id') ? product.affiliateUrl : '';
+                const newLink = prompt('Masukkan Link Affiliate Shopee (contoh: https://s.shopee.co.id/xxxxxx):', currentLink);
+                if (newLink && newLink.trim().startsWith('http')) {
+                  product.affiliateUrl = newLink.trim();
+                  product.productUrl = newLink.trim();
+                  this.saveProductsToStorage();
+                  this.renderProducts();
+                  this.showToast('✅ Link Affiliate berhasil diperbarui!', 'success');
+                }
+              }
+            });
+            return;
+          }
+          const currentLink = product.affiliateUrl?.includes('s.shopee.co.id') ? product.affiliateUrl : '';
+          const newLink = prompt('Masukkan Link Affiliate Shopee (contoh: https://s.shopee.co.id/xxxxxx):', currentLink);
+          if (newLink && newLink.trim().startsWith('http')) {
+            product.affiliateUrl = newLink.trim();
+            product.productUrl = newLink.trim();
+            this.saveProductsToStorage();
+            this.renderProducts();
+            this.showToast('✅ Link Affiliate berhasil diperbarui!', 'success');
+          }
+        });
+      } else {
+        const currentLink = product.affiliateUrl?.includes('s.shopee.co.id') ? product.affiliateUrl : '';
+        const newLink = prompt('Masukkan Link Affiliate Shopee (contoh: https://s.shopee.co.id/xxxxxx):', currentLink);
+        if (newLink && newLink.trim().startsWith('http')) {
+          product.affiliateUrl = newLink.trim();
+          product.productUrl = newLink.trim();
+          this.saveProductsToStorage();
+          this.renderProducts();
+          this.showToast('✅ Link Affiliate berhasil diperbarui!', 'success');
+        }
+      }
+    } else if (action === 'ai') {
       this.selectProductForAi(productId);
       this.switchTab('generator');
     } else if (action === 'pin') {
@@ -737,6 +852,124 @@ class AffiliatorKillerApp {
       this.updateBulkCounts();
       this.showToast('Produk dihapus', 'info');
     }
+  }
+
+  async handleSingleProductEnqueue(prod) {
+    try {
+      this.showToast(`📥 Memasukkan "${(prod.title || '').substring(0, 25)}..." ke Queue...`, 'info');
+      const res = await fetch(`${this.settings.backendUrl}/api/products/${prod.id || prod.itemId}/enqueue-matrix`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customTitle: prod.aiContent?.pinTitle || prod.title,
+          customDescription: prod.aiContent?.pinDescription || '',
+          targetBoard: 'Shopee Affiliate Promo'
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        prod.isEnqueued = true;
+        prod.status = 'Queued';
+        prod.queuedAt = new Date().toISOString();
+        this.selectedProductIds.delete(prod.id);
+        this.saveProductsToStorage();
+        this.renderProducts();
+        this.updateBulkCounts();
+        this.showToast(`✅ Produk di-Acc & dipindahkan ke Antrean Matrix!`, 'success');
+      } else {
+        this.showToast(`❌ Gagal: ${data.error || 'Terjadi kesalahan'}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  async handleSingleProductTelegram(prod) {
+    try {
+      this.showToast(`📢 Mengirim ke Telegram: "${(prod.title || '').substring(0, 25)}..."`, 'info');
+      const res = await fetch(`${this.settings.backendUrl}/api/products/${prod.id || prod.itemId}/publish-telegram`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(`🎉 Berhasil broadcast ke Telegram Channel!`, 'success');
+      } else {
+        this.showToast(`❌ Gagal Telegram: ${data.error || 'Terjadi kesalahan'}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  async handleBulkEnqueue() {
+    const selected = this.getSelectedProducts();
+    if (selected.length === 0) {
+      this.showToast('Pilih minimal 1 produk dengan mencentang kotak produk', 'info');
+      return;
+    }
+
+    this.showToast(`📥 Memasukkan ${selected.length} produk ke Antrean Queue...`, 'info');
+
+    let successCount = 0;
+    for (const prod of selected) {
+      try {
+        const res = await fetch(`${this.settings.backendUrl}/api/products/${prod.id || prod.itemId}/enqueue-matrix`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customTitle: prod.aiContent?.pinTitle || prod.title,
+            customDescription: prod.aiContent?.pinDescription || '',
+            targetBoard: 'Shopee Affiliate Promo'
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          successCount++;
+          prod.isEnqueued = true;
+          prod.status = 'Queued';
+          prod.queuedAt = new Date().toISOString();
+        }
+      } catch (e) {
+        console.warn('Enqueue error:', e);
+      }
+    }
+
+    this.selectedProductIds.clear();
+    this.saveProductsToStorage();
+    this.renderProducts();
+    this.updateBulkCounts();
+    this.showToast(`🎉 ${successCount} produk berhasil di-Acc & dipindahkan ke Antrean Queue!`, 'success');
+  }
+
+  async handleBulkTelegramBroadcast() {
+    const selected = this.getSelectedProducts();
+    if (selected.length === 0) {
+      this.showToast('Pilih minimal 1 produk dengan mencentang kotak produk', 'info');
+      return;
+    }
+
+    this.showToast(`📢 Memulai broadcast ${selected.length} produk ke Telegram...`, 'info');
+
+    let sent = 0;
+    for (let i = 0; i < selected.length; i++) {
+      const prod = selected[i];
+      try {
+        await fetch(`${this.settings.backendUrl}/api/products/${prod.id || prod.itemId}/publish-telegram`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        sent++;
+        this.showToast(`📢 Terkirim (${sent}/${selected.length}): ${(prod.title || '').substring(0, 20)}...`, 'info');
+        if (i < selected.length - 1) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      } catch (e) {}
+    }
+
+    this.showToast(`🎉 Selesai! ${sent} produk berhasil di-broadcast ke Telegram Channel!`, 'success');
   }
 
   // --- Select Product for AI Studio ---
@@ -1199,6 +1432,153 @@ Format Output WAJIB dalam JSON valid:
     }
   }
 
+  // --- Telegram Channel Handler ---
+  async handleSendToTelegram() {
+    const product = this.products.find(p => p.id === this.activeAiProductId);
+    if (!product) return;
+
+    this.showToast('📢 Mengirim broadcast ke Channel Telegram...', 'info');
+
+    if (this.backendOnline && this.settings.useBackend) {
+      try {
+        const res = await fetch(`${this.settings.backendUrl}/api/telegram/broadcast`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product: {
+              ...product,
+              aiContent: {
+                pinTitle: this.inputPinTitle.value || product.aiContent?.pinTitle,
+                pinDescription: this.inputPinDescription.value || product.aiContent?.pinDescription,
+                hashtags: (this.inputPinHashtags.value || '').split(/\s+/).filter(t => t.startsWith('#'))
+              }
+            },
+            options: {
+              chatId: this.settings.telegramChannelId,
+              token: this.settings.telegramBotToken
+            }
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.addHistoryRecord({
+            title: product.title,
+            pinTitle: this.inputPinTitle.value || product.title,
+            affiliateUrl: product.affiliateUrl,
+            imageUrl: product.imageUrl,
+            status: 'Broadcasted to Telegram',
+            platform: 'Telegram',
+            createdAt: new Date().toISOString()
+          });
+          this.showToast('🎉 Berhasil broadcast ke Telegram Channel!', 'success');
+          return;
+        } else {
+          this.showToast(`❌ Gagal: ${data.error}`, 'error');
+          return;
+        }
+      } catch (e) {
+        console.warn('Backend Telegram broadcast error, trying direct API:', e);
+      }
+    }
+
+    // Direct Telegram API fallback if backend is offline
+    const token = this.settings.telegramBotToken || '8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k';
+    const chatId = this.settings.telegramChannelId;
+
+    if (!chatId) {
+      this.showToast('Isi Target Channel ID di menu Pengaturan terlebih dahulu', 'error');
+      this.switchTab('settings');
+      return;
+    }
+
+    try {
+      const title = this.inputPinTitle.value || product.title;
+      const desc = this.inputPinDescription.value || '';
+      const tags = this.inputPinHashtags.value || '';
+      const affLink = product.affiliateUrl || product.productUrl || 'https://shopee.co.id';
+      const caption = `🔥 <b>${title}</b>\n\n💰 <b>Harga: Rp ${priceDiscounted}</b>\n⭐ <b>Rating: ${product.rating || '4.9'} (${product.soldCount || 'Terjual'})</b>\n\n📝 <i>${desc}</i>\n\n🛒 <b>Link Pembelian Shopee:</b>\n👉 <a href="${affLink}">${affLink}</a>\n\n${tags}`;
+
+      const payload = {
+        chat_id: chatId,
+        photo: product.imageUrl,
+        caption: caption.substring(0, 1024),
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [[{ text: '🛍️ BELI SEKARANG DI SHOPEE', url: affLink }]]
+        }
+      };
+
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        this.addHistoryRecord({
+          title: product.title,
+          pinTitle: title,
+          affiliateUrl: affLink,
+          imageUrl: product.imageUrl,
+          status: 'Broadcasted to Telegram',
+          platform: 'Telegram',
+          createdAt: new Date().toISOString()
+        });
+        this.showToast('🎉 Berhasil broadcast ke Telegram Channel!', 'success');
+      } else {
+        this.showToast(`❌ Gagal Telegram: ${data.description}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  async handleTestTelegramConnection() {
+    const token = this.settingTelegramBotToken?.value.trim() || this.settings.telegramBotToken;
+    const chatId = this.settingTelegramChannelId?.value.trim() || this.settings.telegramChannelId;
+
+    if (!chatId) {
+      this.showToast('Masukkan Target Channel ID terlebih dahulu', 'error');
+      return;
+    }
+
+    this.showToast(`📨 Menguji koneksi & broadcast ke ${chatId}...`, 'info');
+
+    try {
+      if (this.backendOnline && this.settings.useBackend) {
+        const res = await fetch(`${this.settings.backendUrl}/api/telegram/test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, token })
+        });
+        const data = await res.json();
+        if (data.success) {
+          this.showToast(`✅ Pesan uji coba berhasil masuk ke ${chatId}!`, 'success');
+          return;
+        }
+      }
+
+      // Direct test
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `✨ <b>AFFILIATOR KILLER - TELEGRAM TEST SUCCESS</b> ✨\n\n🤖 Bot @linkaffiliatorbot terhubung ke channel ini.\n⏱️ Waktu: ${new Date().toLocaleTimeString('id-ID')}`,
+          parse_mode: 'HTML'
+        })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        this.showToast(`✅ Pesan uji coba berhasil masuk ke ${chatId}!`, 'success');
+      } else {
+        this.showToast(`❌ Gagal Telegram: ${data.description}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
   // --- Copy Formatted Text ---
   handleCopyFormattedText() {
     const product = this.products.find(p => p.id === this.activeAiProductId);
@@ -1363,6 +1743,8 @@ Format Output WAJIB dalam JSON valid:
     this.settingCustomPrompt.value = this.settings.customPromptTemplate || '';
 
     this.settingSheetsWebhookUrl.value = this.settings.sheetsWebhookUrl || '';
+    if (this.settingTelegramBotToken) this.settingTelegramBotToken.value = this.settings.telegramBotToken || '8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k';
+    if (this.settingTelegramChannelId) this.settingTelegramChannelId.value = this.settings.telegramChannelId || '';
     this.settingN8nWebhookUrl.value = this.settings.n8nWebhookUrl || '';
     this.settingN8nAuthToken.value = this.settings.n8nAuthToken || '';
     this.settingAffiliateSubid.value = this.settings.affiliateSubId || 'pinterest_pins';
@@ -1387,6 +1769,8 @@ Format Output WAJIB dalam JSON valid:
     this.settings.customPromptTemplate = this.settingCustomPrompt.value;
 
     this.settings.sheetsWebhookUrl = this.settingSheetsWebhookUrl.value.trim();
+    if (this.settingTelegramBotToken) this.settings.telegramBotToken = this.settingTelegramBotToken.value.trim();
+    if (this.settingTelegramChannelId) this.settings.telegramChannelId = this.settingTelegramChannelId.value.trim();
     this.settings.n8nWebhookUrl = this.settingN8nWebhookUrl.value.trim();
     this.settings.n8nAuthToken = this.settingN8nAuthToken.value.trim();
     this.settings.affiliateSubId = this.settingAffiliateSubid.value.trim() || 'pinterest_pins';

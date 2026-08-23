@@ -49,12 +49,21 @@ class BotWorker {
     const campaigns = dbService.getCampaigns();
     const activeCampaigns = campaigns.filter(c => c.status === 'ACTIVE');
 
+    const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
+    const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
+    const timeElapsed = Date.now() - lastDispatchedAt;
+    const nextDispatchInMinutes = lastDispatchedAt > 0 && timeElapsed < intervalMs 
+      ? Math.max(1, Math.ceil((intervalMs - timeElapsed) / 60000))
+      : 0;
+
     return {
       isRunning: config.isRunning,
       isProcessing: this.isProcessing,
-      intervalMinutes: config.intervalMinutes,
-      dailyCap: config.dailyCap,
-      dailyCountToday: config.dailyCountToday,
+      intervalMinutes: config.intervalMinutes || 35,
+      nextDispatchInMinutes,
+      lastDispatchedAt: config.lastDispatchedAt || null,
+      dailyCap: config.dailyCap || 50,
+      dailyCountToday: config.dailyCountToday || 0,
       queueCount: queue.length,
       pendingApprovalCount: queue.filter(q => q.status === 'PENDING_APPROVAL').length,
       readyToPublishCount: queue.filter(q => q.status === 'QUEUED').length,
@@ -79,8 +88,24 @@ class BotWorker {
       const readyItem = queue.find(q => q.status === 'QUEUED');
 
       if (readyItem) {
-        dbService.addLog('INFO', 'WORKER', `⚡ Menemukan Pin siap diposting: "${readyItem.title.substring(0, 35)}..."`);
+        // Check if interval (e.g. 35 minutes) has passed since last dispatch
+        const intervalMs = (config.intervalMinutes || 35) * 60 * 1000;
+        const lastDispatchedAt = config.lastDispatchedAt ? new Date(config.lastDispatchedAt).getTime() : 0;
+        const now = Date.now();
+        const timeElapsed = now - lastDispatchedAt;
+
+        if (lastDispatchedAt > 0 && timeElapsed < intervalMs) {
+          // Still waiting for the 35 minutes interval to elapse
+          this.isProcessing = false;
+          return;
+        }
+
+        dbService.addLog('INFO', 'WORKER', `⚡ Menemukan Produk siap diposting (Jeda ${config.intervalMinutes || 35} mnt): "${readyItem.title.substring(0, 35)}..."`);
         await queueService.dispatchItem(readyItem.id);
+        dbService.updateBotConfig({ 
+          lastDispatchedAt: new Date().toISOString(),
+          dailyCountToday: (config.dailyCountToday || 0) + 1
+        });
         this.isProcessing = false;
         return;
       }

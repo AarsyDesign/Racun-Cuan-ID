@@ -43,6 +43,12 @@ const INITIAL_DATA = {
     pinterestAccessToken: '',
     pinterestBoardId: '',
     pinterestApiConnected: false,
+    telegramStatus: 'CONNECTED',
+    telegramBotToken: '8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k',
+    telegramBotUsername: 'linkaffiliatorbot',
+    telegramBotName: 'Link Affiliate',
+    telegramChannelId: '',
+    telegramAutoPost: false,
     geminiStatus: 'STANDBY',
     geminiApiKey: '',
     geminiModel: 'gemini-2.5-flash',
@@ -64,14 +70,22 @@ function readDb() {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const data = JSON.parse(raw);
     
-    // Ensure all arrays exist
+    // Ensure all arrays and nested objects exist
     if (!data.products) data.products = [];
     if (!data.campaigns) data.campaigns = [];
     if (!data.queue) data.queue = [];
     if (!data.history) data.history = [];
     if (!data.logs) data.logs = INITIAL_DATA.logs;
-    if (!data.botConfig) data.botConfig = INITIAL_DATA.botConfig;
-    if (!data.connections) data.connections = INITIAL_DATA.connections;
+    if (!data.botConfig) {
+      data.botConfig = { ...INITIAL_DATA.botConfig };
+    } else {
+      data.botConfig = { ...INITIAL_DATA.botConfig, ...data.botConfig };
+    }
+    if (!data.connections) {
+      data.connections = { ...INITIAL_DATA.connections };
+    } else {
+      data.connections = { ...INITIAL_DATA.connections, ...data.connections };
+    }
 
     return data;
   } catch (err) {

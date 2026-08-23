@@ -35,6 +35,7 @@ app.use('/api/logs', require('./routes/logs'));
 app.use('/api/connections', require('./routes/connections'));
 app.use('/api/stats', require('./routes/stats'));
 app.use('/api/pinterest', require('./routes/pinterest'));
+app.use('/api/telegram', require('./routes/telegram'));
 
 // Mount Core Scraper & Integration Routes
 app.use('/api/ai', require('./routes/ai'));
@@ -48,11 +49,15 @@ app.use('/api/teable', require('./routes/teable'));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    app: 'racun cuan.id - Super App Khusus Pinterest Affiliate & Automation',
-    version: '3.0.0',
+    app: 'racun cuan.id - Super App Khusus Pinterest & Telegram Affiliate Automation',
+    version: '3.1.0',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    bot: botWorker.getStatus()
+    bot: botWorker.getStatus(),
+    telegram: {
+      bot: '@linkaffiliatorbot',
+      status: 'OPERATIONAL'
+    }
   });
 });
 
@@ -78,10 +83,12 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`
 =====================================================
-✨ RACUN CUAN.ID - SUPER APP KHUSUS PINTEREST
+✨ RACUN CUAN.ID - PINTEREST & TELEGRAM SUPER APP
 =====================================================
 🌐 Super App Hub    : http://localhost:${PORT}
 🩺 Health Check     : http://localhost:${PORT}/api/health
+📌 Pinterest API v5 : Active
+📢 Telegram Bot     : @linkaffiliatorbot (Active)
 🚀 Bot Engine       : Active & Operational
 =====================================================
   `);

@@ -22,6 +22,22 @@ router.post('/', (req, res) => {
   }
 });
 
+// PUT /api/products/:id - Update product details (e.g. affiliateUrl)
+router.put('/:id', (req, res) => {
+  try {
+    const products = dbService.getProducts();
+    const idx = products.findIndex(p => p.id === req.params.id || p.itemId === req.params.id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: 'Produk tidak ditemukan' });
+    }
+    products[idx] = { ...products[idx], ...req.body };
+    dbService.saveProducts(products);
+    res.json({ success: true, product: products[idx] });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/products/:id/enqueue-matrix - Transfer product directly into Matrix Queue
 router.post('/:id/enqueue-matrix', (req, res) => {
   try {
@@ -50,6 +66,26 @@ router.post('/:id/enqueue-matrix', (req, res) => {
     dbService.addLog('SUCCESS', 'QUEUE', `📥 Produk Shopee "${prod.title.substring(0, 35)}..." dimasukkan ke Antrean Matrix.`);
 
     res.json({ success: true, queueItem });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+const telegramPublisher = require('../services/telegram-publisher');
+
+// POST /api/products/:id/publish-telegram - Direct broadcast product to Telegram Channel
+router.post('/:id/publish-telegram', async (req, res) => {
+  try {
+    const products = dbService.getProducts();
+    const prod = products.find(p => p.id === req.params.id || p.itemId === req.params.id);
+    if (!prod) {
+      return res.status(404).json({ success: false, error: 'Produk tidak ditemukan' });
+    }
+
+    const { chatId, customCaption } = req.body;
+    const result = await telegramPublisher.publishProduct(prod, { chatId, customCaption });
+
+    res.json({ success: true, result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

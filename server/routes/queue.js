@@ -46,6 +46,16 @@ router.put('/:id', (req, res) => {
   }
 });
 
+// DELETE /api/queue - Clear all items in queue
+router.delete('/', (req, res) => {
+  try {
+    const queue = queueService.clearQueue();
+    res.json({ success: true, message: 'Queue cleared', queue });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // DELETE /api/queue/:id - Remove item
 router.delete('/:id', (req, res) => {
   try {
@@ -82,6 +92,26 @@ router.post('/batch-approve', async (req, res) => {
 router.post('/:id/dispatch', async (req, res) => {
   try {
     const result = await queueService.dispatchItem(req.params.id, req.body);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/queue/:id/dispatch-telegram - Dispatch item to Telegram immediately
+router.post('/:id/dispatch-telegram', async (req, res) => {
+  try {
+    const result = await queueService.dispatchToTelegram(req.params.id, req.body);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/queue/:id/dispatch-all - Dispatch item to both Pinterest and Telegram
+router.post('/:id/dispatch-all', async (req, res) => {
+  try {
+    const result = await queueService.dispatchMultiChannel(req.params.id, req.body);
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

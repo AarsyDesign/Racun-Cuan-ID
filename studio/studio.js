@@ -4,10 +4,12 @@
 
 class PinMatrixStudio {
   constructor() {
-    this.apiBase = 'http://localhost:3000/api';
+    this.apiBase = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
+      ? `${window.location.origin}/api`
+      : 'http://localhost:3000/api';
     this.activeTab = 'overview';
     this.products = [];
-    this.productFilter = 'all';
+    this.productFilter = 'fresh';
     this.productSearch = '';
     this.campaigns = [];
     this.queue = [];
@@ -16,6 +18,7 @@ class PinMatrixStudio {
     this.botStatus = {};
     this.connections = {};
     this.selectedCampaignIds = new Set();
+    this.selectedStudioProductIds = new Set();
     this.pollInterval = null;
 
     this.init();
@@ -63,6 +66,12 @@ class PinMatrixStudio {
           case 'dispatch-queue':
             if (id) this.dispatchQueueItem(id);
             break;
+          case 'dispatch-telegram':
+            if (id) this.dispatchQueueItemToTelegram(id);
+            break;
+          case 'dispatch-all':
+            if (id) this.dispatchQueueItemMultiChannel(id);
+            break;
           case 'remove-queue':
             if (id) this.removeQueueItem(id);
             break;
@@ -72,8 +81,14 @@ class PinMatrixStudio {
           case 'post-pinterest':
             if (id) this.postProductToPinterest(id);
             break;
+          case 'post-telegram':
+            if (id) this.postProductToTelegram(id);
+            break;
           case 'save-sheets':
             if (id) this.saveProductToSheets(id);
+            break;
+          case 'edit-product-link':
+            if (id) this.editProductLink(id);
             break;
           case 'delete-product':
             if (id) this.deleteProduct(id);
@@ -116,6 +131,35 @@ class PinMatrixStudio {
         this.productSearch = e.target.value.toLowerCase().trim();
         this.renderProducts();
       });
+    }
+
+    // Shopee Studio Batch Actions
+    const selectAllStudioProducts = document.getElementById('checkbox-studio-select-all');
+    if (selectAllStudioProducts) {
+      selectAllStudioProducts.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        if (checked) {
+          this.products.forEach(p => this.selectedStudioProductIds.add(p.id || p.itemId));
+        } else {
+          this.selectedStudioProductIds.clear();
+        }
+        this.renderProducts();
+      });
+    }
+
+    const batchEnqueueBtn = document.getElementById('btn-batch-enqueue-products');
+    if (batchEnqueueBtn) {
+      batchEnqueueBtn.addEventListener('click', () => this.handleBatchEnqueueProducts());
+    }
+
+    const batchTelegramBtn = document.getElementById('btn-batch-telegram-products');
+    if (batchTelegramBtn) {
+      batchTelegramBtn.addEventListener('click', () => this.handleBatchTelegramProducts());
+    }
+
+    const batchDeleteBtn = document.getElementById('btn-batch-delete-products');
+    if (batchDeleteBtn) {
+      batchDeleteBtn.addEventListener('click', () => this.handleBatchDeleteProducts());
     }
 
     // Campaign Form Submit
@@ -166,6 +210,22 @@ class PinMatrixStudio {
     const testGeminiBtn = document.getElementById('btn-test-gemini');
     if (testGeminiBtn) {
       testGeminiBtn.addEventListener('click', () => this.testConnection('gemini'));
+    }
+
+    // Telegram Configuration & Actions
+    const saveTgBtn = document.getElementById('btn-save-telegram-config');
+    if (saveTgBtn) {
+      saveTgBtn.addEventListener('click', () => this.handleSaveTelegramConfig());
+    }
+
+    const testTgBtn = document.getElementById('btn-test-telegram-channel');
+    if (testTgBtn) {
+      testTgBtn.addEventListener('click', () => this.handleTestTelegramChannel());
+    }
+
+    const verifyTgBtn = document.getElementById('btn-verify-telegram-bot');
+    if (verifyTgBtn) {
+      verifyTgBtn.addEventListener('click', () => this.handleVerifyTelegramBot());
     }
 
     const saveSettingsBtn = document.getElementById('btn-save-settings');
@@ -577,11 +637,17 @@ class PinMatrixStudio {
                 ✓ Approve
               </button>
             ` : `
-              <button class="btn-primary" style="padding: 7px 12px; font-size: 12px; background: linear-gradient(135deg, #e60023, #b91c1c);" data-action="dispatch-queue" data-id="${item.id}">
-                📌 Dispatch Pin
+              <button class="btn-primary" style="padding: 7px 9px; font-size: 11px; background: linear-gradient(135deg, #e60023, #b91c1c);" data-action="dispatch-queue" data-id="${item.id}" title="Publish ke Pinterest">
+                📌 Pin
+              </button>
+              <button class="btn-primary" style="padding: 7px 9px; font-size: 11px; background: #24a1de;" data-action="dispatch-telegram" data-id="${item.id}" title="Broadcast ke Telegram Channel">
+                📢 TG
+              </button>
+              <button class="btn-secondary" style="padding: 7px 9px; font-size: 11px; border-color: rgba(255,255,255,0.25);" data-action="dispatch-all" data-id="${item.id}" title="Publish ke Pinterest & Telegram Sekaligus">
+                🚀 All
               </button>
             `}
-            <button class="btn-secondary" style="padding: 7px 10px; font-size: 12px;" data-action="remove-queue" data-id="${item.id}">
+            <button class="btn-secondary" style="padding: 7px 8px; font-size: 12px;" data-action="remove-queue" data-id="${item.id}" title="Hapus dari antrean">
               ✕
             </button>
           </div>
@@ -917,6 +983,35 @@ class PinMatrixStudio {
         </option>
       `).join('');
     }
+
+    // Telegram Elements Rendering
+    const tgTokenInput = document.getElementById('input-telegram-token');
+    const tgChannelInput = document.getElementById('input-telegram-channel');
+    const tgAutoPostToggle = document.getElementById('toggle-telegram-autopost');
+    const tgBadge = document.getElementById('telegram-conn-badge');
+    const tgBotMeta = document.getElementById('telegram-bot-meta');
+
+    if (tgTokenInput && conn.telegramBotToken) {
+      tgTokenInput.value = conn.telegramBotToken;
+    }
+    if (tgChannelInput && conn.telegramChannelId) {
+      tgChannelInput.value = conn.telegramChannelId;
+    }
+    if (tgAutoPostToggle) {
+      tgAutoPostToggle.checked = !!conn.telegramAutoPost;
+    }
+    if (tgBadge) {
+      if (conn.telegramBotUsername) {
+        tgBadge.textContent = `CONNECTED (@${conn.telegramBotUsername})`;
+        tgBadge.className = 'conn-status-badge connected';
+      } else {
+        tgBadge.textContent = 'STANDBY';
+        tgBadge.className = 'conn-status-badge';
+      }
+    }
+    if (tgBotMeta && conn.telegramBotUsername) {
+      tgBotMeta.innerHTML = `<span style="color:#34d399;">● Bot: <strong>@${this.escapeHtml(conn.telegramBotUsername)}</strong> (${this.escapeHtml(conn.telegramBotName || 'Link Affiliate')})</span>`;
+    }
   }
 
   async handleVerifyPinterestToken() {
@@ -947,6 +1042,91 @@ class PinMatrixStudio {
       }
     } catch (e) {
       this.showToast(`❌ Terjadi kesalahan: ${e.message}`, 'error');
+    }
+  }
+
+  async handleSaveTelegramConfig() {
+    const tokenInput = document.getElementById('input-telegram-token');
+    const channelInput = document.getElementById('input-telegram-channel');
+    const autoPostToggle = document.getElementById('toggle-telegram-autopost');
+
+    const botToken = tokenInput ? tokenInput.value.trim() : '';
+    const channelId = channelInput ? channelInput.value.trim() : '';
+    const autoPost = autoPostToggle ? autoPostToggle.checked : false;
+
+    try {
+      this.showToast('💾 Menyimpan konfigurasi Telegram...', 'info');
+      const res = await fetch(`${this.apiBase}/telegram/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ botToken, channelId, autoPost })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.connections = data.connections || {};
+        this.renderConnections();
+        this.showToast('✅ Konfigurasi Telegram berhasil disimpan!', 'success');
+        await this.fetchLogs();
+      } else {
+        this.showToast(`❌ Gagal: ${data.error}`, 'error');
+      }
+    } catch (e) {
+      this.showToast(`❌ Error: ${e.message}`, 'error');
+    }
+  }
+
+  async handleVerifyTelegramBot() {
+    const tokenInput = document.getElementById('input-telegram-token');
+    const token = tokenInput ? tokenInput.value.trim() : '';
+
+    try {
+      this.showToast('🤖 Memeriksa status Bot Telegram...', 'info');
+      const res = await fetch(`${this.apiBase}/telegram/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.connections = data.connections || {};
+        this.renderConnections();
+        this.showToast(`✨ Bot @${data.bot.username} (${data.bot.first_name}) aktif & siap digunakan!`, 'success');
+        await this.fetchLogs();
+      } else {
+        this.showToast(`❌ Bot error: ${data.error}`, 'error');
+      }
+    } catch (e) {
+      this.showToast(`❌ Error: ${e.message}`, 'error');
+    }
+  }
+
+  async handleTestTelegramChannel() {
+    const channelInput = document.getElementById('input-telegram-channel');
+    const tokenInput = document.getElementById('input-telegram-token');
+    const chatId = channelInput ? channelInput.value.trim() : '';
+    const token = tokenInput ? tokenInput.value.trim() : '';
+
+    if (!chatId) {
+      this.showToast('Masukkan Target Channel ID / Username terlebih dahulu (misal: @namachannel)', 'warning');
+      return;
+    }
+
+    try {
+      this.showToast(`📨 Mengirim pesan test ke ${chatId}...`, 'info');
+      const res = await fetch(`${this.apiBase}/telegram/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId, token })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(`🎉 Sukses! Pesan test berhasil masuk ke channel ${chatId}`, 'success');
+        await this.fetchLogs();
+      } else {
+        this.showToast(`❌ Gagal kirim ke channel: ${data.error}`, 'error');
+      }
+    } catch (e) {
+      this.showToast(`❌ Error: ${e.message}`, 'error');
     }
   }
 
@@ -1204,8 +1384,22 @@ class PinMatrixStudio {
 
     let filtered = [...this.products];
 
+    // Filter counts
+    const freshCount = this.products.filter(p => !p.isEnqueued && p.status !== 'Queued').length;
+    const queuedCount = this.products.filter(p => p.isEnqueued || p.status === 'Queued').length;
+    const countFreshEl = document.getElementById('count-filter-fresh');
+    const countQueuedEl = document.getElementById('count-filter-queued');
+    const countAllEl = document.getElementById('count-filter-all');
+    if (countFreshEl) countFreshEl.textContent = String(freshCount);
+    if (countQueuedEl) countQueuedEl.textContent = String(queuedCount);
+    if (countAllEl) countAllEl.textContent = String(this.products.length);
+
     // Filter type
-    if (this.productFilter === 'komisi-xtra') {
+    if (this.productFilter === 'fresh') {
+      filtered = filtered.filter(p => !p.isEnqueued && p.status !== 'Queued');
+    } else if (this.productFilter === 'queued') {
+      filtered = filtered.filter(p => p.isEnqueued || p.status === 'Queued');
+    } else if (this.productFilter === 'komisi-xtra') {
       filtered = filtered.filter(p => p.hasKomisiXtra || (p.commissionPercent && p.commissionPercent >= 20));
     } else if (this.productFilter === 'star-mall') {
       filtered = filtered.filter(p => p.shopType === 'Mall' || p.shopType === 'Star' || p.shopType === 'Star+');
@@ -1220,6 +1414,14 @@ class PinMatrixStudio {
         (p.shopName || '').toLowerCase().includes(this.productSearch)
       );
     }
+
+    // Update studio batch selection counters
+    const countSelectedEl = document.getElementById('count-studio-selected');
+    const countTotalEl = document.getElementById('count-studio-total');
+    const selectAllCheckbox = document.getElementById('checkbox-studio-select-all');
+    if (countSelectedEl) countSelectedEl.textContent = String(this.selectedStudioProductIds.size);
+    if (countTotalEl) countTotalEl.textContent = String(filtered.length);
+    if (selectAllCheckbox) selectAllCheckbox.checked = this.selectedStudioProductIds.size === filtered.length && filtered.length > 0;
 
     if (filtered.length === 0) {
       container.innerHTML = `
@@ -1236,6 +1438,8 @@ class PinMatrixStudio {
     }
 
     container.innerHTML = filtered.map(prod => {
+      const prodId = prod.id || prod.itemId;
+      const isSelected = this.selectedStudioProductIds.has(prodId);
       const img = prod.imageUrl || prod.galleryImages?.[0] || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=80';
       const priceDiscounted = (prod.discountedPrice || 0).toLocaleString('id-ID');
       const priceOrig = prod.originalPrice ? (prod.originalPrice).toLocaleString('id-ID') : null;
@@ -1244,10 +1448,13 @@ class PinMatrixStudio {
       const isStar = prod.shopType === 'Star' || prod.shopType === 'Star+';
 
       return `
-        <div class="shopee-card" data-product-id="${this.escapeHtml(prod.id || prod.itemId)}">
-          <div class="shopee-card-img-wrap">
+        <div class="shopee-card ${isSelected ? 'selected' : ''}" data-product-id="${this.escapeHtml(prodId)}" style="${isSelected ? 'border-color: #10b981; box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.4);' : ''}">
+          <div class="shopee-card-img-wrap" style="position: relative;">
+            <div style="position: absolute; top: 8px; left: 8px; z-index: 20; background: rgba(0,0,0,0.6); padding: 4px; border-radius: 6px; display: flex; align-items: center;">
+              <input type="checkbox" class="studio-product-checkbox" data-id="${this.escapeHtml(prodId)}" ${isSelected ? 'checked' : ''} style="accent-color: #10b981; width: 16px; height: 16px; cursor: pointer;">
+            </div>
             <img src="${this.escapeHtml(img)}" alt="${this.escapeHtml(prod.title)}" class="shopee-card-img" onerror="this.src='https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&auto=format&fit=crop&q=80'">
-            <div class="shopee-badge-top-left">
+            <div class="shopee-badge-top-left" style="margin-left: 32px;">
               ${isMall ? '<span class="badge-tag-mall">MALL</span>' : ''}
               ${isStar ? '<span class="badge-tag-star">STAR+</span>' : ''}
             </div>
@@ -1276,23 +1483,153 @@ class PinMatrixStudio {
             </div>
 
             <div class="shopee-card-actions">
-              <button class="btn-card-action btn-card-matrix" title="Masukkan produk ini ke antrean Matrix AI" data-action="enqueue-matrix" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
-                ⚡ Enqueue Matrix
+              <button class="btn-card-action btn-card-matrix" title="Acc & Masukkan produk ini ke antrean Matrix AI" data-action="enqueue-matrix" data-id="${this.escapeHtml(prodId)}" style="color: #10b981; border-color: rgba(16, 185, 129, 0.3);">
+                📥 Acc Queue
               </button>
-              <button class="btn-card-action btn-card-pin-direct" title="Langsung posting ke Pinterest" data-action="post-pinterest" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
-                📌 Post Pinterest
+              <button class="btn-card-action btn-card-telegram" title="Kirim produk ke Channel Telegram" data-action="post-telegram" data-id="${this.escapeHtml(prodId)}" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);">
+                📢 TG
               </button>
-              <button class="btn-card-action btn-card-sheets" title="Simpan ke Google Sheets" data-action="save-sheets" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
-                📊 Sheets Sync
+              <button class="btn-card-action btn-card-pin-direct" title="Langsung posting ke Pinterest" data-action="post-pinterest" data-id="${this.escapeHtml(prodId)}">
+                📌 Pin
               </button>
-              <button class="btn-card-action btn-card-delete" title="Hapus dari daftar produk" data-action="delete-product" data-id="${this.escapeHtml(prod.id || prod.itemId)}">
-                🗑️ Hapus
+              <button class="btn-card-action btn-card-sheets" title="Simpan ke Google Sheets" data-action="save-sheets" data-id="${this.escapeHtml(prodId)}">
+                📊
+              </button>
+              <button class="btn-card-action" title="Edit / Pasang Link Affiliate Shopee" data-action="edit-product-link" data-id="${this.escapeHtml(prodId)}" style="color: #f59e0b; border-color: rgba(245, 158, 11, 0.3);">
+                🔗
+              </button>
+              <button class="btn-card-action btn-card-delete" title="Hapus dari daftar produk" data-action="delete-product" data-id="${this.escapeHtml(prodId)}">
+                🗑️
               </button>
             </div>
           </div>
         </div>
       `;
     }).join('');
+
+    // Attach checkbox listeners
+    container.querySelectorAll('.studio-product-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const id = e.target.getAttribute('data-id');
+        if (e.target.checked) {
+          this.selectedStudioProductIds.add(id);
+        } else {
+          this.selectedStudioProductIds.delete(id);
+        }
+        if (countSelectedEl) countSelectedEl.textContent = String(this.selectedStudioProductIds.size);
+        if (selectAllCheckbox) selectAllCheckbox.checked = this.selectedStudioProductIds.size === this.products.length && this.products.length > 0;
+        const card = container.querySelector(`.shopee-card[data-product-id="${id}"]`);
+        if (card) {
+          card.classList.toggle('selected', e.target.checked);
+          card.style.borderColor = e.target.checked ? '#10b981' : '';
+          card.style.boxShadow = e.target.checked ? '0 0 0 1px rgba(16, 185, 129, 0.4)' : '';
+        }
+      });
+    });
+  }
+
+  async handleBatchEnqueueProducts() {
+    const selectedIds = Array.from(this.selectedStudioProductIds);
+    if (selectedIds.length === 0) {
+      this.showToast('Centang minimal 1 produk pada kartu untuk Acc ke Queue', 'info');
+      return;
+    }
+
+    this.showToast(`📥 Memasukkan ${selectedIds.length} produk ke Antrean Matrix...`, 'info');
+
+    let successCount = 0;
+    for (const id of selectedIds) {
+      try {
+        const res = await fetch(`${this.apiBase}/products/${id}/enqueue-matrix`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+          successCount++;
+          const prod = this.products.find(p => (p.id || p.itemId) === id);
+          if (prod) {
+            prod.isEnqueued = true;
+            prod.status = 'Queued';
+            prod.queuedAt = new Date().toISOString();
+          }
+        }
+      } catch (err) {
+        console.warn('Batch enqueue error:', err);
+      }
+    }
+
+    this.selectedStudioProductIds.clear();
+
+    await fetch(`${this.apiBase}/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ products: this.products })
+    }).catch(() => {});
+
+    await this.fetchQueue();
+    this.renderProducts();
+    this.showToast(`🎉 ${successCount} produk di-Acc & dipindahkan ke Antrean Matrix!`, 'success');
+  }
+
+  async handleBatchTelegramProducts() {
+    const selectedIds = Array.from(this.selectedStudioProductIds);
+    if (selectedIds.length === 0) {
+      this.showToast('Centang minimal 1 produk untuk broadcast ke Telegram', 'info');
+      return;
+    }
+
+    this.showToast(`📢 Memulai broadcast ${selectedIds.length} produk ke Telegram...`, 'info');
+
+    let sent = 0;
+    for (let i = 0; i < selectedIds.length; i++) {
+      const id = selectedIds[i];
+      try {
+        const res = await fetch(`${this.apiBase}/products/${id}/publish-telegram`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) sent++;
+        // Anti-flood delay 1.5s
+        if (i < selectedIds.length - 1) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      } catch (err) {
+        console.warn('Batch TG error:', err);
+      }
+    }
+
+    this.selectedStudioProductIds.clear();
+    this.renderProducts();
+    this.showToast(`🎉 Selesai! ${sent} produk berhasil di-broadcast ke Telegram Channel!`, 'success');
+  }
+
+  async handleBatchDeleteProducts() {
+    const selectedIds = Array.from(this.selectedStudioProductIds);
+    if (selectedIds.length === 0) {
+      this.showToast('Centang produk yang ingin dihapus', 'info');
+      return;
+    }
+
+    if (!confirm(`Hapus ${selectedIds.length} produk terpilih?`)) return;
+
+    this.products = this.products.filter(p => !selectedIds.includes(p.id || p.itemId));
+    this.selectedStudioProductIds.clear();
+
+    try {
+      await fetch(`${this.apiBase}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: this.products })
+      });
+      this.renderProducts();
+      this.showToast('Produk terpilih berhasil dihapus', 'info');
+    } catch (e) {
+      this.showToast('Gagal menghapus produk', 'error');
+    }
   }
 
   async enqueueProductToMatrix(productId) {
@@ -1305,14 +1642,98 @@ class PinMatrixStudio {
       });
       const data = await res.json();
       if (data.success) {
-        this.showToast('✅ Produk berhasil masuk ke Preview Queue!', 'success');
+        const prod = this.products.find(p => (p.id || p.itemId) === productId);
+        if (prod) {
+          prod.isEnqueued = true;
+          prod.status = 'Queued';
+          prod.queuedAt = new Date().toISOString();
+        }
+        this.selectedStudioProductIds.delete(productId);
+        await fetch(`${this.apiBase}/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: this.products })
+        }).catch(() => {});
+
+        this.showToast('✅ Produk di-Acc & dipindahkan ke Preview Queue!', 'success');
         await this.fetchQueue();
-        this.switchTab('preview-queue');
+        this.renderProducts();
       } else {
         this.showToast(`❌ Gagal: ${data.error}`, 'error');
       }
     } catch (err) {
       this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  async editProductLink(productId) {
+    const prod = this.products.find(p => (p.id || p.itemId) === productId);
+    if (!prod) return;
+
+    let activeModalLink = null;
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+      try {
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        let targetTab = activeTab;
+        if (!targetTab?.url?.includes('shopee')) {
+          const allTabs = await chrome.tabs.query({});
+          targetTab = allTabs.find(t => t.url && (t.url.includes('shopee.co.id') || t.url.includes('affiliate.shopee')));
+        }
+        if (targetTab && targetTab.id) {
+          const res = await new Promise(resolve => {
+            chrome.tabs.sendMessage(targetTab.id, { action: 'GET_ACTIVE_MODAL_SHORTLINK' }, (resp) => {
+              if (chrome.runtime.lastError) resolve(null);
+              else resolve(resp);
+            });
+          });
+          if (res && res.success && res.shortlink) {
+            activeModalLink = res.shortlink;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (activeModalLink) {
+      prod.affiliateUrl = activeModalLink;
+      prod.productUrl = activeModalLink;
+      try {
+        await fetch(`${this.apiBase}/products/${productId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ affiliateUrl: activeModalLink, productUrl: activeModalLink })
+        });
+        await fetch(`${this.apiBase}/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: this.products })
+        });
+        this.renderProducts();
+        this.showToast(`🎯 Berhasil menangkap link affiliate dari Shopee: ${activeModalLink}`, 'success');
+        return;
+      } catch (e) {}
+    }
+
+    const currentLink = prod.affiliateUrl?.includes('s.shopee.co.id') ? prod.affiliateUrl : '';
+    const newLink = prompt('Masukkan Link Affiliate Shopee (contoh: https://s.shopee.co.id/xxxxxx):', currentLink);
+    if (newLink && newLink.trim().startsWith('http')) {
+      prod.affiliateUrl = newLink.trim();
+      prod.productUrl = newLink.trim();
+      try {
+        await fetch(`${this.apiBase}/products/${productId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ affiliateUrl: newLink.trim(), productUrl: newLink.trim() })
+        });
+        await fetch(`${this.apiBase}/products`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ products: this.products })
+        });
+        this.renderProducts();
+        this.showToast('✅ Link Affiliate berhasil diperbarui!', 'success');
+      } catch (e) {
+        this.showToast('Gagal menyimpan link affiliate', 'error');
+      }
     }
   }
 
@@ -1344,6 +1765,63 @@ class PinMatrixStudio {
       }
     } catch (err) {
       this.showToast(`❌ Error post Pinterest: ${err.message}`, 'error');
+    }
+  }
+
+  async postProductToTelegram(productId) {
+    try {
+      const prod = this.products.find(p => p.id === productId || p.itemId === productId);
+      if (!prod) return;
+
+      this.showToast('📢 Mengirim produk ke Channel Telegram...', 'info');
+      const res = await fetch(`${this.apiBase}/products/${productId}/publish-telegram`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast(`🎉 Berhasil broadcast ke Telegram Channel! ${data.result?.postUrl ? `Link: ${data.result.postUrl}` : ''}`, 'success');
+        await this.fetchLogs();
+      } else {
+        this.showToast(`❌ Gagal kirim ke Telegram: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error Telegram: ${err.message}`, 'error');
+    }
+  }
+
+  async dispatchQueueItemToTelegram(id) {
+    try {
+      this.showToast('📢 Mengirim item antrean ke Telegram...', 'info');
+      const res = await fetch(`${this.apiBase}/queue/${id}/dispatch-telegram`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('🎉 Berhasil dikirim ke Channel Telegram!', 'success');
+        await this.fetchQueue();
+        await this.fetchLogs();
+      } else {
+        this.showToast(`❌ Gagal Telegram: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error: ${err.message}`, 'error');
+    }
+  }
+
+  async dispatchQueueItemMultiChannel(id) {
+    try {
+      this.showToast('🚀 Memublikasikan serentak ke Pinterest & Telegram...', 'info');
+      const res = await fetch(`${this.apiBase}/queue/${id}/dispatch-all`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        this.showToast('🎉 Berhasil dipublikasikan ke Multi-Channel!', 'success');
+        await this.fetchQueue();
+        await this.fetchLogs();
+      } else {
+        this.showToast(`❌ Gagal Multi-Channel: ${data.error}`, 'error');
+      }
+    } catch (err) {
+      this.showToast(`❌ Error: ${err.message}`, 'error');
     }
   }
 

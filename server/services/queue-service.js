@@ -4,6 +4,7 @@
 
 const dbService = require('./db-service');
 const pinterestPublisher = require('./pinterest-publisher');
+const telegramPublisher = require('./telegram-publisher');
 
 class QueueService {
   getQueue(status = null) {
@@ -83,7 +84,7 @@ class QueueService {
   }
 
   /**
-   * Dispatches a queue item directly to Pinterest
+   * Dispatches a queue item directly to Pinterest (and optionally auto-broadcast to Telegram)
    */
   async dispatchItem(id, options = {}) {
     const item = this.getQueueItemById(id);
@@ -91,22 +92,113 @@ class QueueService {
 
     dbService.updateQueueItem(id, { status: 'PROCESSING' });
 
-    try {
-      const publishRes = await pinterestPublisher.publishPin(item, options);
-      // Remove from queue after success and update status
-      dbService.removeFromQueue(id);
+    let publishRes = null;
+    let telegramRes = null;
+    let errors = [];
 
+    // 1. Pinterest dispatch attempt
+    try {
+      publishRes = await pinterestPublisher.publishPin(item, options);
+    } catch (pErr) {
+      errors.push(`Pinterest: ${pErr.message}`);
+    }
+
+    // 2. Telegram scheduled dispatch attempt
+    const connections = dbService.getConnections();
+    if (connections.telegramAutoPost && connections.telegramChannelId) {
+      try {
+        telegramRes = await telegramPublisher.publishPin({
+          ...item,
+          pinterestPinUrl: publishRes?.pinUrl || null
+        });
+      } catch (tgErr) {
+        errors.push(`Telegram: ${tgErr.message}`);
+        dbService.addLog('WARNING', 'TELEGRAM', `Auto-post Telegram gagal: ${tgErr.message}`);
+      }
+    }
+
+    if (publishRes || telegramRes) {
+      dbService.removeFromQueue(id);
       return {
         success: true,
         item,
-        publishRes
+        publishRes,
+        telegramRes
       };
-    } catch (err) {
+    } else {
+      const errMsg = errors.join(' | ') || 'Gagal dispatch multi-channel';
       dbService.updateQueueItem(id, {
         status: 'FAILED',
-        lastError: err.message
+        lastError: errMsg
       });
+      throw new Error(errMsg);
+    }
+  }
+
+  /**
+   * Dispatches a queue item specifically to Telegram Channel
+   */
+  async dispatchToTelegram(id, options = {}) {
+    const item = this.getQueueItemById(id);
+    if (!item) throw new Error(`Queue item ${id} not found`);
+
+    try {
+      const telegramRes = await telegramPublisher.publishPin(item, options);
+      return {
+        success: true,
+        item,
+        telegramRes
+      };
+    } catch (err) {
+      dbService.addLog('ERROR', 'TELEGRAM', `Gagal dispatch ke Telegram: ${err.message}`);
       throw err;
+    }
+  }
+
+  /**
+   * Dispatches a queue item to both Pinterest and Telegram simultaneously
+   */
+  async dispatchMultiChannel(id, options = {}) {
+    const item = this.getQueueItemById(id);
+    if (!item) throw new Error(`Queue item ${id} not found`);
+
+    dbService.updateQueueItem(id, { status: 'PROCESSING' });
+
+    const results = { pinterest: null, telegram: null, errors: [] };
+
+    // 1. Pinterest
+    try {
+      results.pinterest = await pinterestPublisher.publishPin(item, options);
+    } catch (pErr) {
+      results.errors.push(`Pinterest: ${pErr.message}`);
+    }
+
+    // 2. Telegram
+    try {
+      results.telegram = await telegramPublisher.publishPin({
+        ...item,
+        pinterestPinUrl: results.pinterest?.pinUrl || null
+      }, options);
+    } catch (tErr) {
+      results.errors.push(`Telegram: ${tErr.message}`);
+    }
+
+    if (results.pinterest || results.telegram) {
+      dbService.removeFromQueue(id);
+      return {
+        success: true,
+        item,
+        results,
+        partial: results.errors.length > 0,
+        errors: results.errors
+      };
+    } else {
+      const combinedErr = results.errors.join(' | ');
+      dbService.updateQueueItem(id, {
+        status: 'FAILED',
+        lastError: combinedErr
+      });
+      throw new Error(combinedErr);
     }
   }
 }

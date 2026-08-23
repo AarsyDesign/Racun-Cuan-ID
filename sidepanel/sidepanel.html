@@ -122,11 +122,11 @@
         <!-- Scan Command Bar -->
         <div class="scan-hero-box">
           <div class="scan-actions-grid">
-            <button id="btn-scan-viewport" class="btn-scan-main" title="Scan produk yang terlihat di layar Shopee saat ini">
+            <button id="btn-scan-viewport" class="btn-scan-main" title="Scan produk yang terlihat di layar Shopee saat ini (Viewport)">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
               </svg>
-              <span>Scan Layar Shopee</span>
+              <span>⚡ Scan Shopee (Viewport)</span>
             </button>
             <button id="btn-scan-fullpage" class="btn-scan-alt" title="Scan seluruh halaman yang termuat">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -138,8 +138,10 @@
             </button>
           </div>
           <div class="scan-tip-line">
-            <span class="pulse-sparkle">⚡</span>
-            <span>Buka Shopee & klik scan untuk salin produk, gambar HD & komisi</span>
+            <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--brand-emerald); font-weight: 500;">
+              <input type="checkbox" id="check-auto-shortlink" checked style="accent-color: #10b981; cursor: pointer;">
+              <span>⚡ Auto-Click 'Buat Link' (Ambil s.shopee.co.id)</span>
+            </label>
           </div>
         </div>
 
@@ -150,18 +152,21 @@
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input type="text" id="input-search-products" placeholder="Cari nama produk / toko..." aria-label="Cari produk">
+            <input type="text" id="input-search-products" placeholder="Cari produk / toko..." aria-label="Cari produk">
           </div>
 
-          <div class="sort-field">
+          <div class="sort-field" style="display: flex; gap: 6px;">
+            <select id="select-filter-status" aria-label="Status Filter" style="font-weight: 600;">
+              <option value="fresh">🟢 Belum Di-ACC</option>
+              <option value="queued">📦 Sudah di Antrean</option>
+              <option value="all">Semua Status</option>
+            </select>
             <select id="select-filter-sort" aria-label="Urutkan Produk">
               <option value="default">Urutan Asli</option>
-              <option value="commission_desc">🔥 Komisi Tertinggi (%)</option>
-              <option value="commission_val_desc">💰 Estimasi Cuan (Rp)</option>
-              <option value="discount_desc">Diskon Terbesar</option>
-              <option value="rating_desc">Rating Tertinggi</option>
-              <option value="price_asc">Harga Termurah</option>
-              <option value="price_desc">Harga Tertinggi</option>
+              <option value="commission_desc">🔥 Komisi (%)</option>
+              <option value="commission_val_desc">💰 Cuan (Rp)</option>
+              <option value="discount_desc">Diskon</option>
+              <option value="rating_desc">Rating</option>
             </select>
           </div>
         </div>
@@ -175,9 +180,17 @@
           </label>
 
           <div class="bulk-pills-cluster">
+            <button id="btn-bulk-queue" class="pill-btn" style="background: rgba(16, 185, 129, 0.18); border-color: rgba(16, 185, 129, 0.4); color: #34d399;" title="Masukkan semua produk terpilih ke Antrean Queue">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+              <span>📥 Acc to Queue</span>
+            </button>
+            <button id="btn-bulk-telegram" class="pill-btn" style="background: rgba(36, 161, 222, 0.18); border-color: rgba(36, 161, 222, 0.4); color: #38bdf8;" title="Broadcast semua yang dipilih ke Telegram Channel">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.93-1.28 4.88-2.12 5.86-2.54 2.8-.1.18 3.37.24 3.73.24.06 0 .17-.01.24-.07.08-.08.1-.19.11-.27-.01-.06-.02-.15-.02-.19z"/></svg>
+              <span>📢 Telegram</span>
+            </button>
             <button id="btn-bulk-ai" class="pill-btn pill-btn-ai" title="Generate AI Copy untuk semua yang dipilih">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-              <span>Batch AI</span>
+              <span>AI</span>
             </button>
             <button id="btn-bulk-sheets" class="pill-btn pill-btn-sheets" title="Simpan semua ke Spreadsheet">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
@@ -345,6 +358,13 @@
                 <line x1="9" y1="15" x2="15" y2="15"></line>
               </svg>
               <span>Simpan ke Sheets</span>
+            </button>
+
+            <button id="btn-action-send-telegram" class="btn-channel btn-telegram-blue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.93-1.28 4.88-2.12 5.86-2.54 2.8-.1.18 3.37.24 3.73.24.06 0 .17-.01.24-.07.08-.08.1-.19.11-.27-.01-.06-.02-.15-.02-.19z"/>
+              </svg>
+              <span>Broadcast Telegram</span>
             </button>
 
             <button id="btn-action-send-n8n" class="btn-channel btn-n8n-orange">
@@ -550,6 +570,34 @@
 
             <button id="btn-test-sheets-connection" class="btn-killer-secondary btn-sm">
               <span>⚡ Test Koneksi Sheets</span>
+            </button>
+          </div>
+
+          <!-- Telegram Channel Bot Card -->
+          <div class="setting-group-box">
+            <div class="group-header">
+              <div class="group-icon-badge" style="background: rgba(36, 161, 222, 0.15); color: #24a1de;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.93-1.28 4.88-2.12 5.86-2.54 2.8-.1.18 3.37.24 3.73.24.06 0 .17-.01.24-.07.08-.08.1-.19.11-.27-.01-.06-.02-.15-.02-.19z"/></svg>
+              </div>
+              <div>
+                <h4 class="group-title">Telegram Channel Bot</h4>
+                <span class="group-desc">Broadcast promo ke channel @linkaffiliatorbot</span>
+              </div>
+            </div>
+
+            <div class="setting-input-field">
+              <label for="setting-telegram-bot-token">Telegram Bot Token</label>
+              <input type="password" id="setting-telegram-bot-token" class="input-styled" value="8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k" placeholder="123456:ABC-DEF...">
+            </div>
+
+            <div class="setting-input-field">
+              <label for="setting-telegram-channel-id">Target Channel ID / Username</label>
+              <input type="text" id="setting-telegram-channel-id" class="input-styled" placeholder="@namachannel atau -100xxxxxxxxxx">
+              <span class="hint-caption">Pastikan bot <code>@linkaffiliatorbot</code> sudah jadi Admin channel.</span>
+            </div>
+
+            <button id="btn-test-telegram-connection" class="btn-killer-secondary btn-sm">
+              <span>⚡ Test Broadcast Telegram</span>
             </button>
           </div>
 

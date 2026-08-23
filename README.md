@@ -18,6 +18,7 @@
 - 🎨 **Visual Pin & Moodboard Studio**: Curate product photos and visual assets into high-converting Pinterest Pin formats (2:3 aspect ratio).
 - ✍️ **AI-Powered Title & Caption Assistant**: Generate engaging SEO-friendly titles, descriptions, and hashtags tailored for Pinterest audience discovery.
 - 📌 **Official Pinterest Integration**: Seamlessly connect with Pinterest API v5 to publish pins, manage boards, and view performance insights.
+- 📢 **Telegram Channel Broadcaster**: 1-Click & autonomous broadcasting of HD product photos, price strike-throughs, and interactive CTA buttons (`🛍️ Beli di Shopee`) to Telegram Channels.
 - ⚡ **Smart Content Scheduler**: Plan, queue, and schedule your pin releases with custom cadence and approval workflows.
 - 📊 **Spreadsheet & Data Export**: Organize your content logs, product references, and campaign performance in Excel and CSV formats.
 

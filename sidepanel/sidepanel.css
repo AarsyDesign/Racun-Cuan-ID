@@ -1183,6 +1183,14 @@ body.theme-light .icon-sun { display: block; }
   box-shadow: 0 2px 10px rgba(15, 157, 88, 0.3);
 }
 
+.btn-telegram-blue {
+  background: #24a1de;
+}
+.btn-telegram-blue:hover {
+  background: #1b8ec6;
+  box-shadow: 0 2px 10px rgba(36, 161, 222, 0.35);
+}
+
 .btn-n8n-orange {
   background: var(--brand-n8n);
 }

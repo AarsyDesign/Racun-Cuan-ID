@@ -290,17 +290,39 @@
         </div>
 
         <!-- Filter & Search Toolbar -->
-        <div class="studio-card" style="margin-bottom: 18px; padding: 14px 18px;">
+        <div class="studio-card" style="margin-bottom: 12px; padding: 12px 18px;">
           <div style="display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
             <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="product-filter-chips">
-              <button class="filter-chip active" data-filter="all">Semua Produk (<span id="count-filter-all">0</span>)</button>
+              <button class="filter-chip active" data-filter="fresh">🟢 Belum Di-ACC (<span id="count-filter-fresh">0</span>)</button>
+              <button class="filter-chip" data-filter="queued">📦 Sudah di Antrean (<span id="count-filter-queued">0</span>)</button>
               <button class="filter-chip" data-filter="komisi-xtra">✨ Komisi XTRA</button>
               <button class="filter-chip" data-filter="star-mall">⭐ Star+ & Mall</button>
-              <button class="filter-chip" data-filter="high-rating">🌟 Rating ≥ 4.8</button>
+              <button class="filter-chip" data-filter="all">Semua (<span id="count-filter-all">0</span>)</button>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
               <input type="text" id="input-search-products" class="form-input" placeholder="🔍 Cari judul / toko..." style="width: 240px; font-size: 12px; padding: 6px 12px;">
             </div>
+          </div>
+        </div>
+
+        <!-- Batch Actions Toolbar for Studio -->
+        <div class="studio-card" id="shopee-bulk-bar" style="margin-bottom: 18px; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-md);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #fff;">
+              <input type="checkbox" id="checkbox-studio-select-all" style="accent-color: #10b981; width: 16px; height: 16px; cursor: pointer;">
+              <span>Pilih Semua (<span id="count-studio-selected">0</span>/<span id="count-studio-total">0</span>)</span>
+            </label>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-primary" id="btn-batch-enqueue-products" style="padding: 7px 16px; font-size: 12px; width: auto; background: #10b981; display: inline-flex; align-items: center; gap: 6px;">
+              <span>📥 Acc Masuk Antrean Queue</span>
+            </button>
+            <button class="btn-secondary" id="btn-batch-telegram-products" style="padding: 7px 16px; font-size: 12px; width: auto; border-color: #38bdf8; color: #38bdf8; display: inline-flex; align-items: center; gap: 6px;">
+              <span>📢 Broadcast Telegram</span>
+            </button>
+            <button class="btn-secondary" id="btn-batch-delete-products" style="padding: 7px 14px; font-size: 12px; width: auto; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+              <span>🗑️ Hapus Terpilih</span>
+            </button>
           </div>
         </div>
 
@@ -807,6 +829,67 @@
               </button>
               <button class="btn-secondary" id="btn-test-pinterest">⚡ Test Koneksi</button>
               <a href="https://developers.pinterest.com/docs/api/v5/pins-create" target="_blank" class="btn-secondary" style="text-decoration:none;">📖 Dokumentasi API v5 ↗</a>
+            </div>
+          </div>
+
+          <!-- Telegram Channel Broadcast Card -->
+          <div class="connection-card" style="grid-column: span 2;">
+            <div>
+              <div class="conn-header">
+                <div class="conn-icon telegram">📢</div>
+                <div>
+                  <h4 style="color:#fff; font-size:15px; font-weight:700;">Telegram Channel Broadcast (Official Bot API)</h4>
+                  <div style="font-size:11px; color:var(--text-muted);">Broadcast Otomatis Foto HD, Promo Coret & Link Affiliate ke Channel Telegram</div>
+                </div>
+                <span class="conn-status-badge connected" id="telegram-conn-badge">CONNECTED (@linkaffiliatorbot)</span>
+              </div>
+              <p style="font-size:12.5px; color:var(--text-secondary); margin: 10px 0 16px;">
+                Mempublikasikan postingan rekomendasi produk lengkap dengan gambar HD, perbandingan harga coret, rating, deskripsi copywriting, hashtags, serta tombol interaktif <code>🛍️ BELI SEKARANG DI SHOPEE</code> langsung ke Channel Telegram Anda.
+              </p>
+
+              <!-- Telegram Configuration Form -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; background: rgba(0,0,0,0.25); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); margin-bottom: 14px;">
+                <div>
+                  <label class="form-label" style="font-size: 11px; display:flex; justify-content:space-between;">
+                    <span>Telegram Bot Token</span>
+                    <a href="https://t.me/BotFather" target="_blank" style="color: #60a5fa; text-decoration:none;">@BotFather ↗</a>
+                  </label>
+                  <input type="password" id="input-telegram-token" class="form-input" value="8277933275:AAEy1HetGbczxg6qhYNQMp6F-iPhmQ8rB-k" placeholder="123456:ABC-DEF..." style="font-family: var(--font-mono); font-size: 12px;">
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;" id="telegram-bot-meta">● Bot: <strong>@linkaffiliatorbot</strong> (Link Affiliate)</div>
+                </div>
+
+                <div>
+                  <label class="form-label" style="font-size: 11px; display:flex; justify-content:space-between;">
+                    <span>Target Channel ID / Username</span>
+                    <span style="color: #34d399; font-size: 10.5px;">Wajib Tambah Bot sbg Admin</span>
+                  </label>
+                  <input type="text" id="input-telegram-channel" class="form-input" placeholder="@namachannel atau -100xxxxxxxxxx" style="font-family: var(--font-mono); font-size: 12px;">
+                  <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px;">Contoh: <code>@racunshopee_id</code> atau ID numeric <code>-100234567890</code></div>
+                </div>
+              </div>
+
+              <!-- Auto-Post Toggle & Tutorial Box -->
+              <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(36, 161, 222, 0.08); border: 1px dashed rgba(36, 161, 222, 0.3); padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 12px; color: #bae6fd; max-width: 600px;">
+                  💡 <strong>Panduan 3 Langkah:</strong> 1. Buat Channel Telegram → 2. Di Pengaturan Channel, tambahkan <strong>@linkaffiliatorbot</strong> sebagai Administrator (Izin: <em>Post Messages</em>) → 3. Masukkan username channel di atas lalu klik <strong>Test Pesan</strong>!
+                </div>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #fff; cursor: pointer;">
+                  <input type="checkbox" id="toggle-telegram-autopost" style="cursor: pointer; accent-color: #24a1de;">
+                  <span>Auto-Broadcast ke Telegram saat Dispatch Pin</span>
+                </label>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button class="btn-primary" style="width: auto; background: #24a1de;" id="btn-save-telegram-config">
+                💾 Simpan Konfigurasi Telegram
+              </button>
+              <button class="btn-secondary" id="btn-test-telegram-channel" style="border-color: rgba(36, 161, 222, 0.4); color: #7dd3fc;">
+                ⚡ Test Kirim Pesan ke Channel
+              </button>
+              <button class="btn-secondary" id="btn-verify-telegram-bot">
+                🔑 Cek Info Bot (@linkaffiliatorbot)
+              </button>
             </div>
           </div>
 

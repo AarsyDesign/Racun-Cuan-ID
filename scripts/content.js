@@ -9,20 +9,87 @@
  */
 
 (() => {
-  // Listen to messages from Side Panel
+  // --- REAL SHOPEE SHORTLINK SNIFFER & MODAL OBSERVER ---
+  let lastCapturedShortlink = null;
+
+  function findModalShortlink() {
+    // 1. Check all textareas and inputs
+    const inputs = Array.from(document.querySelectorAll('textarea, input'));
+    for (const el of inputs) {
+      const val = (el.value || el.getAttribute('value') || el.innerText || el.textContent || '').trim();
+      const match = val.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_-]+/i);
+      if (match) return match[0];
+    }
+    // 2. Check full body text / modal innerHTML
+    const fullHtml = document.body ? (document.body.innerHTML || '') : '';
+    const bodyMatch = fullHtml.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_-]+/i);
+    if (bodyMatch) return bodyMatch[0];
+
+    return null;
+  }
+
+  function closeModal() {
+    try {
+      const closeButtons = Array.from(document.querySelectorAll('.shopee-modal__close, svg[class*="close"], button[class*="close"], i[class*="close"], div[class*="modal-close"], div[class*="close-btn"], .ant-modal-close'));
+      for (const b of closeButtons) {
+        try { b.click(); } catch (e) {}
+      }
+      const escEvent = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true });
+      document.dispatchEvent(escEvent);
+      window.dispatchEvent(escEvent);
+    } catch (e) {}
+  }
+
+  // Observe modal popup in real-time
+  try {
+    const modalObserver = new MutationObserver(() => {
+      const link = findModalShortlink();
+      if (link && link !== lastCapturedShortlink) {
+        lastCapturedShortlink = link;
+        console.log('[Affiliator Killer] 🎯 Captured Shopee Shortlink:', link);
+        try {
+          chrome.runtime.sendMessage({
+            action: 'SHOPEE_SHORTLINK_CAPTURED',
+            shortlink: link
+          });
+        } catch (e) {}
+      }
+    });
+    modalObserver.observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
+
+  // Listen to messages from Side Panel & Studio Hub
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'SCAN_SHOPEE_PAGE') {
-      try {
-        const mode = message.mode || 'viewport';
-        const products = scanShopeePage(mode);
-        console.log(`[Affiliator Killer] Scanned ${products.length} products with verified titles:`, products);
-        sendResponse({ success: true, count: products.length, products });
-      } catch (err) {
-        console.error('[Affiliator Killer] Scraping error:', err);
-        sendResponse({ success: false, error: err.message, products: [] });
-      }
+      (async () => {
+        try {
+          const mode = message.mode || 'viewport';
+          const url = window.location.href;
+          const isAffiliatePage = url.includes('affiliate.shopee') || url.includes('/offer/');
+          // Default: always auto-grab shortlinks on affiliate dashboard
+          const doAutoShortlinks = isAffiliatePage && (message.autoGenerateShortlinks !== false);
+
+          let products = [];
+          if (doAutoShortlinks) {
+            products = await extractShopeeAffiliateDashboardWithAutoShortlinks(mode);
+          } else {
+            products = scanShopeePage(mode);
+          }
+          console.log(`[Affiliator Killer] Scanned ${products.length} products.`, products);
+          sendResponse({ success: true, count: products.length, products });
+        } catch (err) {
+          console.error('[Affiliator Killer] Scraping error:', err);
+          sendResponse({ success: false, error: err.message, products: [] });
+        }
+      })();
+      return true; // Keep channel open for async
     }
-    return true; // Keep channel open
+
+    if (message.action === 'GET_ACTIVE_MODAL_SHORTLINK') {
+      const link = findModalShortlink();
+      sendResponse({ success: !!link, shortlink: link });
+      return true;
+    }
   });
 
   /**
@@ -499,8 +566,8 @@
         let itemId = '';
 
         if (rawHref) {
-          cleanUrl = rawHref.startsWith('http') ? rawHref.split('?')[0] : `https://shopee.co.id${rawHref.split('?')[0]}`;
-          const ids = extractShopAndItemIds(cleanUrl);
+          const fullRaw = rawHref.startsWith('http') ? rawHref : `https://shopee.co.id${rawHref}`;
+          const ids = extractShopAndItemIds(fullRaw);
           shopId = ids.shopId;
           itemId = ids.itemId;
         }
@@ -513,7 +580,13 @@
           }
           itemId = `aff_${Math.abs(hash).toString(36)}`;
         }
-        if (!cleanUrl) cleanUrl = `https://shopee.co.id/product/${shopId || 'offer'}/${itemId}`;
+
+        // Generate REAL, working Shopee buyer link
+        if (shopId && itemId && !itemId.startsWith('aff_')) {
+          cleanUrl = `https://shopee.co.id/product/${shopId}/${itemId}`;
+        } else {
+          cleanUrl = `https://shopee.co.id/search?keyword=${encodeURIComponent(title)}`;
+        }
 
         const uniqueKey = itemId + '_' + title;
         if (seenKeys.has(uniqueKey)) return;
@@ -550,6 +623,296 @@
 
     return products;
   }
+
+  // =========================================================================
+  // AUTO AFFILIATE SHORTLINK GRABBER
+  // Strategy: click every "Buat Link" button, wait for modal, read s.shopee.co.id link
+  // =========================================================================
+
+  /**
+   * Find ALL "Buat Link" buttons on page.
+   * Only targets the INNERMOST element with exactly that text to avoid selecting parent wrappers.
+   */
+  function findAllBuatLinkButtons() {
+    const result = [];
+    const seen = new Set();
+    // Look only at buttons and spans — the most specific leaf element
+    const candidates = Array.from(document.querySelectorAll('button, span, a'));
+    for (const el of candidates) {
+      // Must be visible
+      if (el.offsetWidth < 5 || el.offsetHeight < 5) continue;
+      // Must have EXACTLY "Buat Link" as own direct text
+      const ownText = (el.innerText || el.textContent || '').trim();
+      if (ownText !== 'Buat Link') continue;
+      // Avoid selecting parent containers that contain child "Buat Link" elements
+      const childWithSameText = Array.from(el.querySelectorAll('*')).find(c => {
+        return (c.innerText || c.textContent || '').trim() === 'Buat Link' && c !== el;
+      });
+      if (childWithSameText) continue;
+      if (!seen.has(el)) {
+        seen.add(el);
+        result.push(el);
+      }
+    }
+    return result;
+  }
+
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+  /**
+   * Wait for the Shopee "Link Penawaran Produk" modal to appear and return the shortlink.
+   * We detect the modal by looking for "Mohon salin link singkat" in page text,
+   * then read the textarea value.
+   */
+  async function waitForModal(timeoutMs = 5000, excludeLink = null) {
+    const start = Date.now();
+    const SHOPEE_LINK_RE = /https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_-]+/i;
+
+    while (Date.now() - start < timeoutMs) {
+      await sleep(100);
+
+      // Check if modal text is present on the page
+      const pageText = document.body ? (document.body.innerText || '') : '';
+      const modalIsOpen = pageText.includes('Mohon salin link singkat') || pageText.includes('salin link singkat') || pageText.includes('Link Penawaran');
+
+      if (modalIsOpen) {
+        // Read from all visible textareas / inputs
+        const inputs = Array.from(document.querySelectorAll('textarea, input[type="text"], input:not([type])')).filter(el => el.offsetWidth > 0);
+        for (const el of inputs) {
+          const val = (el.value || el.getAttribute('value') || el.placeholder || el.getAttribute('placeholder') || '').trim();
+          const m = val.match(SHOPEE_LINK_RE);
+          if (m && m[0] !== excludeLink) return m[0];
+        }
+        // Also try reading from modal text directly
+        const m = pageText.match(SHOPEE_LINK_RE);
+        if (m && m[0] !== excludeLink) return m[0];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Close the "Link Penawaran Produk" modal.
+   */
+  function closeActiveModal() {
+    // Try clicking the × close button
+    const allEls = Array.from(document.querySelectorAll('button, i, svg, div, span'));
+    const closeBtns = allEls.filter(el => {
+      if (el.offsetWidth === 0 || el.offsetHeight === 0) return false;
+      const aria = (el.getAttribute('aria-label') || '').toLowerCase();
+      const cls = (typeof el.className === 'string' ? el.className : '').toLowerCase();
+      const text = (el.innerText || el.textContent || '').trim();
+      return aria.includes('close') || aria.includes('tutup') ||
+             cls.includes('close') || cls.includes('dismiss') || cls.includes('modal__close') ||
+             text === '×' || text === '✕' || text === 'Tutup' || text === 'Batal' || text === '✖';
+    });
+    if (closeBtns.length > 0) {
+      try { closeBtns[0].click(); } catch (e) {}
+    }
+    // Escape key as additional fallback
+    try {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+    } catch (e) {}
+  }
+
+  /**
+   * MAIN: Extract all products from Shopee Affiliate, then auto-click each
+   * "Buat Link" button, wait for modal, grab the s.shopee.co.id link.
+   */
+  async function extractShopeeAffiliateDashboardWithAutoShortlinks(mode = 'viewport') {
+    const products = extractShopeeAffiliateDashboard(mode);
+    if (products.length === 0) return products;
+
+    console.log(`[Affiliator Killer] ⚡ Auto-grabbing shortlinks for ${products.length} products...`);
+
+    const buatLinkBtns = findAllBuatLinkButtons();
+    console.log(`[Affiliator Killer] Found ${buatLinkBtns.length} "Buat Link" buttons on page`);
+
+    if (buatLinkBtns.length === 0) {
+      console.warn('[Affiliator Killer] No "Buat Link" buttons found. Returning products without affiliate links.');
+      return products;
+    }
+
+    const totalToProcess = Math.min(products.length, buatLinkBtns.length);
+    let lastCaptured = null;
+
+    for (let i = 0; i < totalToProcess; i++) {
+      const btn = buatLinkBtns[i];
+
+      try {
+        // Notify progress
+        try {
+          chrome.runtime.sendMessage({
+            action: 'AUTO_SHORTLINK_PROGRESS',
+            current: i + 1,
+            total: totalToProcess,
+            title: products[i]?.title || 'Produk'
+          });
+        } catch (e) {}
+
+        // 1. Scroll tombol ke tengah layar
+        btn.scrollIntoView({ behavior: 'auto', block: 'center' });
+        await sleep(200);
+
+        // 2. Klik tombol "Buat Link" — ini trigger Shopee generate link
+        btn.click();
+        console.log(`[Affiliator Killer] 🖱️ Clicked "Buat Link" #${i + 1}`);
+
+        // 3. Tunggu modal "Link Penawaran Produk" muncul dan baca shortlink
+        const shortlink = await waitForModal(5000, lastCaptured);
+
+        if (shortlink) {
+          products[i].affiliateUrl = shortlink;
+          products[i].productUrl = shortlink;
+          lastCaptured = shortlink;
+          console.log(`[Affiliator Killer] ✅ [${i + 1}/${totalToProcess}] ${shortlink}`);
+        } else {
+          console.warn(`[Affiliator Killer] ⚠️ No shortlink for product #${i + 1}: "${products[i]?.title}"`);
+        }
+
+        // 4. Tutup modal sebelum lanjut
+        closeActiveModal();
+        await sleep(350);
+
+      } catch (err) {
+        console.error(`[Affiliator Killer] Error at product #${i + 1}:`, err);
+        closeActiveModal();
+        await sleep(200);
+      }
+    }
+
+    console.log(`[Affiliator Killer] 🎉 Done! Grabbed ${products.filter(p => p.affiliateUrl?.includes('s.shopee.co.id') || p.affiliateUrl?.includes('shope.ee')).length}/${totalToProcess} affiliate links.`);
+    return products;
+  }
+
+  // Placeholder kept for backward compat (no longer used internally)
+  function findMakeLinkButtonInCard(card) {
+    if (!card) return null;
+
+    // Priority 1: Exact text match on any clickable element (button, a, span, div)
+    const allClickable = Array.from(card.querySelectorAll('button, a, [role="button"], span, div'));
+    for (const el of allClickable) {
+      const t = (el.innerText || el.textContent || '').trim();
+      if (/^(buat link|buat tautan|dapatkan link|dapatkan tautan|get link|generate link)$/i.test(t) && el.offsetWidth > 0 && el.offsetHeight > 0) {
+        return el;
+      }
+    }
+
+    // Priority 2: Loose text match on visible buttons and <a> tags
+    for (const el of allClickable) {
+      const t = (el.innerText || el.textContent || '').trim();
+      if (/buat|link|tautan|dapatkan/i.test(t) && el.offsetWidth > 20 && el.offsetHeight > 10) {
+        return el;
+      }
+    }
+
+    // Priority 3: Last visible button in card (typical position for "Buat Link")
+    const visibleBtns = Array.from(card.querySelectorAll('button, [role="button"]')).filter(b => b.offsetWidth > 10 && b.offsetHeight > 10);
+    if (visibleBtns.length > 0) return visibleBtns[visibleBtns.length - 1];
+
+    return null;
+  }
+
+
+  /**
+   * Helper: search for generated shortlink in modal, inputs, textareas, and DOM
+   */
+  function findModalShortlink() {
+    // 1. Check all textareas, inputs, and editable elements (value, placeholder, attributes, text)
+    const inputs = Array.from(document.querySelectorAll('textarea, input, [contenteditable="true"]'));
+    for (const el of inputs) {
+      const val = (
+        el.value || 
+        el.getAttribute('value') || 
+        el.placeholder || 
+        el.getAttribute('placeholder') || 
+        el.innerText || 
+        el.textContent || 
+        ''
+      ).trim();
+      const match = val.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_\-\.\/]+/i);
+      if (match) return match[0];
+    }
+
+    // 2. Check modal / dialog / popup elements
+    const modals = Array.from(document.querySelectorAll('div[class*="modal"], div[class*="dialog"], div[role="dialog"], div[class*="popup"], div[class*="content"], div[class*="drawer"], div[class*="overlay"], div[class*="mask"], .shopee-modal, .shopee-popup'));
+    for (const m of modals) {
+      const text = m.innerText || m.textContent || '';
+      const match = text.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_\-\.\/]+/i);
+      if (match) return match[0];
+
+      const html = m.innerHTML || '';
+      const htmlMatch = html.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_\-\.\/]+/i);
+      if (htmlMatch) return htmlMatch[0];
+    }
+
+    // 3. Search document body
+    if (document.body) {
+      const bodyText = document.body.innerText || '';
+      const textMatch = bodyText.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_\-\.\/]+/i);
+      if (textMatch) return textMatch[0];
+
+      const html = document.body.innerHTML || '';
+      const htmlMatch = html.match(/https:\/\/(s\.shopee\.co\.id|shope\.ee)\/[a-zA-Z0-9_\-\.\/]+/i);
+      if (htmlMatch) return htmlMatch[0];
+    }
+
+    return null;
+  }
+
+  /**
+   * Helper: close any open modal
+   */
+  function closeModal() {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+    document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }));
+
+    const closeBtns = Array.from(document.querySelectorAll('button, svg, div[role="button"], i, span')).filter(el => {
+      const aria = el.getAttribute('aria-label') || '';
+      const cls = el.className || '';
+      const text = (el.innerText || el.textContent || '').trim();
+      return (
+        aria.toLowerCase().includes('close') ||
+        aria.toLowerCase().includes('tutup') ||
+        (typeof cls === 'string' && (cls.includes('close') || cls.includes('dismiss'))) ||
+        text === '×' || text === '✕' || text === 'Tutup' || text === 'Batal'
+      ) && el.offsetWidth > 0;
+    });
+    if (closeBtns.length > 0) {
+      try { closeBtns[0].click(); } catch (e) {}
+    }
+
+    const overlays = document.querySelectorAll('div[class*="mask"], div[class*="overlay"], div[class*="backdrop"]');
+    overlays.forEach(o => {
+      try { o.click(); } catch (e) {}
+    });
+  }
+
+
+  // Real-time Mutation Observer for sniffing Shopee Affiliate Shortlink anytime modal appears
+  try {
+    const shortlinkObserver = new MutationObserver(() => {
+      const link = findModalShortlink();
+      if (link && link !== window.__lastDetectedShopeeShortlink) {
+        window.__lastDetectedShopeeShortlink = link;
+        console.log('[Affiliator Killer] 🎯 Real-time Shopee Shortlink Sniffed:', link);
+        try {
+          chrome.runtime.sendMessage({
+            action: 'SHOPEE_SHORTLINK_SNIFFED',
+            shortlink: link
+          });
+        } catch (e) {}
+      }
+    });
+
+    if (document.body) {
+      shortlinkObserver.observe(document.body, { childList: true, subtree: true });
+    } else {
+      document.addEventListener('DOMContentLoaded', () => {
+        shortlinkObserver.observe(document.body, { childList: true, subtree: true });
+      });
+    }
+  } catch (e) {}
 
   /**
    * =========================================================================
