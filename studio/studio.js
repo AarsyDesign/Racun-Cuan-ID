@@ -202,6 +202,31 @@ class PinMatrixStudio {
         window.open(`${this.apiBase}/queue/export/csv`, '_blank');
       });
     }
+
+    // Shopee Products Refresh & Clear
+    const syncShopeeBtn = document.getElementById('btn-sync-shopee-products');
+    if (syncShopeeBtn) {
+      syncShopeeBtn.addEventListener('click', async () => {
+        await this.fetchProducts();
+        this.showToast('🔄 Daftar produk Shopee diperbarui', 'info');
+      });
+    }
+
+    const clearShopeeBtn = document.getElementById('btn-clear-shopee-products');
+    if (clearShopeeBtn) {
+      clearShopeeBtn.addEventListener('click', async () => {
+        if (confirm('Hapus semua produk Shopee yang tersimpan di database?')) {
+          try {
+            await fetch(`${this.apiBase}/products`, { method: 'DELETE' });
+            await this.fetchProducts();
+            await this.fetchStats();
+            this.showToast('🗑️ Semua produk berhasil dibersihkan', 'success');
+          } catch (e) {
+            this.showToast('Gagal membersihkan produk', 'error');
+          }
+        }
+      });
+    }
   }
 
   switchTab(tabId) {

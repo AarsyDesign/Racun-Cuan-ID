@@ -103,17 +103,38 @@ module.exports = {
   saveProducts(newProducts) {
     const db = readDb();
     const existing = db.products || [];
-    const seen = new Set(existing.map(p => p.itemId || p.title));
+
+    const normalizeKey = (p) => {
+      if (!p) return '';
+      if (p.itemId && !p.itemId.startsWith('aff_')) return `id_${p.itemId}`;
+      return (p.title || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]/gi, '');
+    };
+
+    const existingMap = new Map();
+    existing.forEach(p => {
+      const k = normalizeKey(p);
+      if (k) existingMap.set(k, p);
+    });
 
     newProducts.forEach(np => {
-      const key = np.itemId || np.title;
-      if (!seen.has(key)) {
-        existing.unshift(np);
-        seen.add(key);
+      const k = normalizeKey(np);
+      if (k) {
+        if (existingMap.has(k)) {
+          const old = existingMap.get(k);
+          Object.assign(old, np, {
+            imageUrl: np.imageUrl || old.imageUrl,
+            scrapedAt: new Date().toISOString()
+          });
+        } else {
+          existingMap.set(k, np);
+        }
       }
     });
 
-    db.products = existing.slice(0, 500);
+    db.products = Array.from(existingMap.values()).slice(0, 500);
     writeDb(db);
     return db.products;
   },

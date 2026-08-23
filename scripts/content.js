@@ -505,7 +505,14 @@
           itemId = ids.itemId;
         }
 
-        if (!itemId) itemId = `aff_${Date.now()}_${index}`;
+        if (!itemId) {
+          let hash = 0;
+          for (let i = 0; i < title.length; i++) {
+            hash = ((hash << 5) - hash) + title.charCodeAt(i);
+            hash |= 0;
+          }
+          itemId = `aff_${Math.abs(hash).toString(36)}`;
+        }
         if (!cleanUrl) cleanUrl = `https://shopee.co.id/product/${shopId || 'offer'}/${itemId}`;
 
         const uniqueKey = itemId + '_' + title;
@@ -513,7 +520,7 @@
         seenKeys.add(uniqueKey);
 
         products.push({
-          id: `prod_aff_${itemId}_${Date.now()}`,
+          id: `prod_${itemId}`,
           itemId: itemId,
           shopId: shopId,
           title: title,
