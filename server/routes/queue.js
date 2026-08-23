@@ -93,8 +93,8 @@ router.get('/export/csv', (req, res) => {
   try {
     const queue = queueService.getQueue();
     const csvContent = pinterestPublisher.generateBulkCsv(queue);
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="pinlume_pinterest_queue.csv"');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="racuncuan_pinterest_queue.csv"');
     res.send(csvContent);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

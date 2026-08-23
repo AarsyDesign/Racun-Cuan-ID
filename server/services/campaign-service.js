@@ -42,7 +42,7 @@ class CampaignService {
       objectOutfit: data.objectOutfit || '',
       locations: data.locations || '',
       vibes: data.vibes || '',
-      affiliateSubId: data.affiliateSubId || 'pinlume_auto',
+      affiliateSubId: data.affiliateSubId || 'racuncuan_auto',
       customAffiliateUrl: data.customAffiliateUrl || '',
       updatedAt: new Date().toISOString()
     };
@@ -114,7 +114,7 @@ class CampaignService {
       }
 
       const randomImage = VISUAL_PRESETS[Math.floor(Math.random() * VISUAL_PRESETS.length)];
-      const affiliateLink = campaign.customAffiliateUrl || `https://s.shopee.co.id/aff_${campaign.affiliateSubId || 'pinlume'}_${Date.now().toString().slice(-4)}`;
+      const affiliateLink = campaign.customAffiliateUrl || `https://s.shopee.co.id/aff_${campaign.affiliateSubId || 'racuncuan'}_${Date.now().toString().slice(-4)}`;
 
       const queueItem = {
         campaignId: campaign.id,
