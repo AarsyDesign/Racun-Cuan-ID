@@ -131,6 +131,12 @@ router.get('/analytics', async (req, res) => {
   try {
     const { start_date, end_date, metric_types } = req.query;
     const analytics = await pinterestPublisher.getUserAnalytics(token, start_date, end_date, metric_types);
+    res.json({ success: true, analytics });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/pinterest/verify-session - Verify Pinterest Web Session Cookie
 router.post('/verify-session', async (req, res) => {
   try {
