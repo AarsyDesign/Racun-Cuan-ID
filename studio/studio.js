@@ -1498,15 +1498,36 @@ class PinMatrixStudio {
       document.body.appendChild(container);
     }
 
+    // Clean previous toasts to prevent stacking spam
+    container.innerHTML = '';
+
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.innerHTML = message;
+    
+    // Truncate message if too long to prevent taking up screen
+    let displayMsg = String(message || '');
+    if (displayMsg.length > 110) {
+      displayMsg = displayMsg.substring(0, 107) + '...';
+    }
+    
+    toast.innerHTML = `<span class="toast-text">${displayMsg}</span><span class="toast-close">×</span>`;
+
+    // Click to dismiss
+    toast.addEventListener('click', () => {
+      toast.classList.add('toast-hiding');
+      setTimeout(() => toast.remove(), 200);
+    });
 
     container.appendChild(toast);
-    setTimeout(() => {
-      toast.style.opacity = '0';
-      setTimeout(() => toast.remove(), 300);
-    }, 3500);
+
+    // Auto dismiss after 2.6 seconds
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => {
+      if (toast && toast.parentElement) {
+        toast.classList.add('toast-hiding');
+        setTimeout(() => toast.remove(), 200);
+      }
+    }, 2600);
   }
 
   escapeHtml(text) {
