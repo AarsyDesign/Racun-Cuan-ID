@@ -369,8 +369,8 @@ class PinterestPublisher {
       raw = raw.slice(1, -1).trim();
     }
     
-    // If user pasted just the token value of _pinterest_sess
-    if (!raw.includes('=')) {
+    // If raw does not explicitly specify _pinterest_sess=, prepend it
+    if (!raw.includes('_pinterest_sess=')) {
       raw = `_pinterest_sess=${raw}`;
     }
     
