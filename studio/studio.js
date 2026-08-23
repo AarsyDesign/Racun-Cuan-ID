@@ -609,15 +609,35 @@ class PinMatrixStudio {
   }
 
   renderStats(stats) {
+    if (!stats) return;
     const elTotal = document.getElementById('kpi-total-pins');
+    const elTotalTrend = document.getElementById('kpi-total-pins-trend');
     const elDispatched = document.getElementById('kpi-dispatched-today');
+    const elDispatchedTrend = document.getElementById('kpi-dispatched-trend');
     const elQueue = document.getElementById('kpi-queue-pending');
+    const elQueueTrend = document.getElementById('kpi-queue-trend');
     const elActiveCamp = document.getElementById('kpi-active-campaigns');
+    const elCampTrend = document.getElementById('kpi-campaigns-trend');
 
-    if (elTotal) elTotal.textContent = stats.totalPinsGenerated || '14';
-    if (elDispatched) elDispatched.textContent = `${stats.publishedToday || 12}/${stats.dailyCap || 50}`;
-    if (elQueue) elQueue.textContent = stats.queueReady + stats.queuePending;
-    if (elActiveCamp) elActiveCamp.textContent = stats.activeCampaignsCount;
+    const totalPins = stats.totalPinsGenerated !== undefined ? stats.totalPinsGenerated : (this.queue?.length || 0) + (this.history?.length || 0);
+    const pubToday = stats.publishedToday !== undefined ? stats.publishedToday : (this.history?.length || 0);
+    const dailyCap = stats.dailyCap || 50;
+    const qTotal = stats.queueTotal !== undefined ? stats.queueTotal : (this.queue?.length || 0);
+    const qPending = stats.queuePending !== undefined ? stats.queuePending : (this.queue?.filter(q => q.status === 'PENDING_APPROVAL').length || 0);
+    const activeCamps = stats.activeCampaignsCount !== undefined ? stats.activeCampaignsCount : (this.campaigns?.filter(c => c.status === 'ACTIVE').length || 0);
+    const totalCamps = stats.totalCampaignsCount !== undefined ? stats.totalCampaignsCount : (this.campaigns?.length || 0);
+
+    if (elTotal) elTotal.textContent = totalPins;
+    if (elTotalTrend) elTotalTrend.textContent = `${pubToday} dipublish hari ini`;
+
+    if (elDispatched) elDispatched.textContent = `${pubToday} / ${dailyCap}`;
+    if (elDispatchedTrend) elDispatchedTrend.textContent = stats.botRunning ? '● Bot Active & Running' : '⏸️ Bot Paused';
+
+    if (elQueue) elQueue.textContent = qTotal;
+    if (elQueueTrend) elQueueTrend.textContent = `${qPending} butuh approval`;
+
+    if (elActiveCamp) elActiveCamp.textContent = activeCamps;
+    if (elCampTrend) elCampTrend.textContent = `${totalCamps} total campaign`;
   }
 
   updateQueueBadge() {
