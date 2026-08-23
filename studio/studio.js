@@ -2132,17 +2132,24 @@ class PinMatrixStudio {
   async handleTestStudioBackend() {
     const input = document.getElementById('setting-studio-backend-url');
     const status = document.getElementById('backend-conn-status');
-    const rawUrl = (input ? input.value : '').trim();
+    let rawUrl = (input ? input.value : '').trim();
     if (!rawUrl) {
       this.showToast('⚠️ Masukkan URL backend terlebih dahulu!', 'warning');
       return;
     }
+
+    // Auto-prepend https:// if user omitted protocol
+    if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+      rawUrl = `https://${rawUrl}`;
+      if (input) input.value = rawUrl;
+    }
+
     const cleanUrl = rawUrl.replace(/\/+$/, '');
     const testEndpoint = cleanUrl.endsWith('/api') ? `${cleanUrl}/health` : `${cleanUrl}/api/health`;
 
     this.showToast(`Menguji koneksi ke ${cleanUrl}...`, 'info');
     try {
-      const res = await fetch(testEndpoint, { signal: AbortSignal.timeout(4000) });
+      const res = await fetch(testEndpoint, { signal: AbortSignal.timeout(6000) });
       if (res.ok) {
         const data = await res.json().catch(() => ({}));
         if (status) {
@@ -2158,7 +2165,7 @@ class PinMatrixStudio {
         status.textContent = '● Gagal Terhubung';
         status.style.color = '#ef4444';
       }
-      this.showToast(`❌ Gagal terhubung ke server (${e.message}). Pastikan server di Railway sudah Live!`, 'error');
+      this.showToast(`❌ Gagal terhubung (${e.message}). Pastikan URL memakai https://`, 'error');
     }
   }
 
@@ -2166,8 +2173,12 @@ class PinMatrixStudio {
     const input = document.getElementById('setting-studio-backend-url');
     const status = document.getElementById('backend-conn-status');
     if (input) {
-      const rawUrl = input.value.trim();
-      if (rawUrl && rawUrl.startsWith('http')) {
+      let rawUrl = input.value.trim();
+      if (rawUrl) {
+        if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+          rawUrl = `https://${rawUrl}`;
+          input.value = rawUrl;
+        }
         const clean = rawUrl.replace(/\/+$/, '');
         localStorage.setItem('pinmatrix_backend_url', clean);
         this.apiBase = clean.endsWith('/api') ? clean : `${clean}/api`;
@@ -2176,7 +2187,7 @@ class PinMatrixStudio {
           status.style.color = clean.includes('localhost') ? 'var(--accent-green)' : '#38bdf8';
         }
         await this.fetchAllData();
-      } else if (!rawUrl) {
+      } else {
         localStorage.removeItem('pinmatrix_backend_url');
         this.apiBase = (typeof window !== 'undefined' && window.location.protocol.startsWith('http'))
           ? `${window.location.origin}/api`
