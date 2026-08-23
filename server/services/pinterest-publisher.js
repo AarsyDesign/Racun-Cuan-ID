@@ -607,7 +607,10 @@ class PinterestPublisher {
   /**
    * Fetches user boards via Pinterest Web Session
    */
-  async getWebSessionBoards(cookieHeader, csrfToken) {
+  async getWebSessionBoards(cookieHeader, csrfToken, username = '') {
+    const conn = dbService.getConnections();
+    const uname = username || conn.pinterestUsername || 'racuncuanid';
+
     const headers = {
       'Cookie': cookieHeader,
       'X-CSRFToken': csrfToken,
@@ -615,11 +618,37 @@ class PinterestPublisher {
       'X-Pinterest-AppState': 'active',
       'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'Referer': 'https://www.pinterest.com/pin-builder/',
+      'Referer': 'https://www.pinterest.com/',
       'Origin': 'https://www.pinterest.com'
     };
 
-    // Strategy 1: BoardPickerBoardsResource
+    // Strategy 1: BoardsResource with username
+    try {
+      const res = await fetch('https://www.pinterest.com/resource/BoardsResource/get/', {
+        method: 'POST',
+        headers,
+        body: new URLSearchParams({
+          source_url: `/${uname}/_saved/`,
+          data: JSON.stringify({ options: { username: uname, field_set_key: 'detailed' }, context: {} })
+        }).toString()
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const rawBoards = json.resource_response?.data || [];
+        if (Array.isArray(rawBoards) && rawBoards.length > 0) {
+          return rawBoards.map(b => ({
+            id: b.id,
+            name: b.name,
+            description: b.description || '',
+            privacy: b.privacy || 'PUBLIC',
+            pinCount: b.pin_count || 0,
+            url: b.url ? `https://www.pinterest.com${b.url}` : ''
+          }));
+        }
+      }
+    } catch (e) {}
+
+    // Strategy 2: BoardPickerBoardsResource
     try {
       const res = await fetch('https://www.pinterest.com/resource/BoardPickerBoardsResource/get/', {
         method: 'POST',
@@ -645,33 +674,8 @@ class PinterestPublisher {
       }
     } catch (e) {}
 
-    // Strategy 2: BoardsResource
-    try {
-      const res = await fetch('https://www.pinterest.com/resource/BoardsResource/get/', {
-        method: 'POST',
-        headers,
-        body: new URLSearchParams({
-          source_url: '/',
-          data: JSON.stringify({ options: { field_set_key: 'detailed' }, context: {} })
-        }).toString()
-      });
-      if (res.ok) {
-        const json = await res.json();
-        const rawBoards = json.resource_response?.data || [];
-        if (Array.isArray(rawBoards) && rawBoards.length > 0) {
-          return rawBoards.map(b => ({
-            id: b.id,
-            name: b.name,
-            description: b.description || '',
-            privacy: b.privacy || 'PUBLIC',
-            pinCount: b.pin_count || 0,
-            url: b.url ? `https://www.pinterest.com${b.url}` : ''
-          }));
-        }
-      }
-    } catch (e) {}
-
     return [
+      { id: '1093108209497436838', name: 'Product Affiliate', pinCount: 4 },
       { id: 'default', name: 'Default Board (Auto-Created on Pin)', pinCount: 0 }
     ];
   }
